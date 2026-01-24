@@ -1,5 +1,11 @@
 # Todo List and Notes Tracker
 
+## Notes
+- Data to Display
+     - Power (can be calculated from current and voltage data)
+     - Location
+     - Lap Time
+
 ## Frontend
 
 Easy stuff to ask other ppl
