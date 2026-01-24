@@ -1,0 +1,16 @@
+.git
+.gitignore
+node_modules
+.env
+.env.local
+.DS_Store
+dist
+.vscode
+.idea
+*.log
+npm-debug.log*
+bun-debug.log*
+.next
+README.md
+TODO.md
+.turbo
