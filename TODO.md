@@ -17,3 +17,9 @@ Main Tasks
 - Wireframe Design
 - Implement car display and data cards
 - Implement map and car tracker
+
+## Dockerize
+- Docker compose backend and frontend containers
+- Create container registry image on Github
+- Build on Pi
+- CI pipeline
