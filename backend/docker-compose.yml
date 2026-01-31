@@ -1,0 +1,110 @@
+# docker-compose.yml
+
+services:
+  postgres:
+    image: postgres:alpine
+    environment:
+      POSTGRES_DB: telemetry_db
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+    ports:
+      - 5435:5432
+    restart: on-failure:3
+    networks:
+      - redis-network
+
+  pgweb:
+    image: sosedoff/pgweb
+    depends_on:
+      - postgres
+    environment:
+      PGWEB_DATABASE_URL: postgres://postgres:password@postgres:5432/telemetry_db?sslmode=disable
+    ports:
+      - 8085:8081
+    restart: on-failure:3
+    networks:
+      - redis-network
+
+  redis:
+    image: redis:latest
+    command: redis-server
+    volumes:
+      - redis:/var/lib/redis
+      - redis-config:/usr/local/etc/redis/redis.conf
+    ports:
+      - 6379:6379
+    networks:
+      - redis-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    volumes:
+      - ./api:/app/api  # Mount for development hot-reload
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=telemetry_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+    depends_on:
+      - postgres
+      - redis
+    restart: on-failure:3
+    networks:
+      - redis-network
+
+  subscriber:
+    build:
+      context: .
+      dockerfile: subscriber/Dockerfile
+    volumes:
+      - ./subscriber:/app  # Mount for development
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=telemetry_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - ROS_TOPIC=topic  # Default placeholder, override as needed
+      - ROS_DOMAIN_ID=0  # ROS 2 domain ID (default 0)
+    depends_on:
+      - postgres
+      - redis
+    restart: on-failure:3
+    networks:
+      - redis-network
+    # ROS 2 discovery typically needs host network or specific network config
+    # For Raspberry Pi, you may need to add: network_mode: "host"
+    # Comment out network_mode if using Docker network discovery
+    # network_mode: "host"
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - HTTP_USER=root
+      - HTTP_PASSWORD=password
+    ports:
+      - 8081:8081
+    networks:
+      - redis-network
+    depends_on:
+      - redis
+
+volumes:
+  redis:
+  redis-config:
+
+networks:
+  redis-network:
+    driver: bridge
