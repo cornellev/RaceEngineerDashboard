@@ -75,7 +75,6 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0
-      - ROS_TOPIC=topic  # Default placeholder, override as needed
       - ROS_DOMAIN_ID=0  # ROS 2 domain ID (default 0)
     depends_on:
       - postgres

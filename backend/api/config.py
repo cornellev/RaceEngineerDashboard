@@ -18,9 +18,6 @@ class Settings:
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
     REDIS_DB: int = int(os.getenv("REDIS_DB", "0"))
     
-    # ROS subscriber settings
-    ROS_TOPIC: str = os.getenv("ROS_TOPIC", "topic")  # Default placeholder topic
-    
     @property
     def postgres_url(self) -> str:
         """Get PostgreSQL connection URL."""

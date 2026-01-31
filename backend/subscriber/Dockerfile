@@ -1,6 +1,6 @@
 # Dockerfile for ROS 2 Subscriber
 # Uses ROS 2 Humble (supports arm64 for Raspberry Pi)
-FROM osrf/ros2:humble-desktop
+FROM osrf/ros:humble-desktop-full
 
 # Set working directory
 WORKDIR /app
@@ -22,5 +22,5 @@ COPY subscriber/subscriber.py ./subscriber.py
 
 # Source ROS 2 setup and run subscriber
 # Note: ROS 2 needs to be sourced in each command
-CMD ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && python3 subscriber.py"]
+CMD ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && cd /app && python3 subscriber.py"]
 
