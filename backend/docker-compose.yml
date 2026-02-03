@@ -67,25 +67,22 @@ services:
     volumes:
       - ./subscriber:/app  # Mount for development
     environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
+      - POSTGRES_HOST=localhost  # Use localhost with host network mode
+      - POSTGRES_PORT=5435  # Use host-exposed port (5435:5432)
       - POSTGRES_DB=telemetry_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - REDIS_HOST=redis
+      - REDIS_HOST=localhost  # Use localhost with host network mode
       - REDIS_PORT=6379
       - REDIS_DB=0
-      - ROS_DOMAIN_ID=0  # ROS 2 domain ID (default 0)
+      - ROS_DOMAIN_ID=14  # ROS 2 domain ID (set to 14)
     depends_on:
       - postgres
       - redis
     restart: on-failure:3
-    networks:
-      - redis-network
-    # ROS 2 discovery typically needs host network or specific network config
-    # For Raspberry Pi, you may need to add: network_mode: "host"
-    # Comment out network_mode if using Docker network discovery
-    # network_mode: "host"
+    # Host network mode for ROS discovery over Tailscale/VPN
+    # Note: With host network, can't use Docker service names - must use localhost
+    network_mode: "host"
 
   redis-commander:
     image: rediscommander/redis-commander:latest
