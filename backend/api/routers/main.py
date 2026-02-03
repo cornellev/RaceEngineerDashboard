@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 
 app = FastAPI()
 
@@ -9,9 +9,12 @@ app = FastAPI()
 - Consider pagination for history endpoint if data size is large.
 """
 
-# API router modules
-@app.get("/snapshot")
-async def get_snapshot():
+"""
+Placeholder data access functions
+Replace these with actual PostgreSQL / ROS / Redis logic
+"""
+
+async def read_snapshot():
     """
     Get the latest snapshot of all sensor data.
     """
@@ -44,8 +47,7 @@ async def get_snapshot():
     },
 }
 
-@app.get("/snapshot/{category}")
-async def get_snapshot_category(category: str):
+def read_snapshot_category(category: str):
     """
     Get the latest snapshot of a specific sensor data category.
     `category` can be one of: power, motor, rpm_front, rpm_back, gps
@@ -84,8 +86,7 @@ async def get_snapshot_category(category: str):
     else:
         return {"error": "Invalid category"}
 
-@app.get("/history/")
-async def get_history(num_entries: int = 1):
+def read_history(num_entries: int = 1):
     """
     Get the historical sensor data for the last `num_entries` entries.
     `num_entries` is specified as a query parameter i.e. ?num_entries=10
@@ -123,3 +124,75 @@ async def get_history(num_entries: int = 1):
             },
         })
     return history_data
+
+
+""" ----- WebSocket Endpoints ----"""
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket : WebSocket):
+    await websocket.accept()
+
+    try:
+        while True:
+            msg = await websocket.receive_json()
+
+            msg_type: Optional[str] = msg.get("type")
+
+            # 1) Full snapshot (replaces GET /snapshot)
+            if msg_type == "get_snapshot":
+                snapshot = read_snapshot()
+                await websocket.send_json(
+                    {
+                        "type": "snapshot",
+                        "data": snapshot,
+                    }
+                )
+
+            # 2) Category snapshot (replaces GET /snapshot/{category})
+            elif msg_type == "get_snapshot_category":
+                category: str = msg.get("category", "")
+                snapshot_category = read_snapshot_category(category)
+
+                if category in snapshot:
+                    await websocket.send_json(
+                        {
+                            "type": "snapshot_category",
+                            "category": category,
+                            "data": snapshot_category,
+                        }
+                    )
+                else:
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "message": f"Invalid category: {category}",
+                        }
+                    )
+
+            # 3) History (replaces GET /history/?num_entries=N)
+            elif msg_type == "subscribe_history":
+                num_entries: int = int(msg.get("num_entries", 1))
+                history = read_history(num_entries)
+                await websocket.send_json(
+                    {
+                        "type": "history",
+                        "num_entries": num_entries,
+                        "data": history,
+                    }
+                )
+                # If you also want to keep pushing *new* entries as they arrive,
+                # you would keep this connection open and call websocket.send_json(...)
+                # elsewhere when new data is written.
+
+            else:
+                # Unknown message type
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "message": f"Unknown message type: {msg_type}",
+                    }
+                )
+
+    except WebSocketDisconnect:
+        # Client disconnected, do any cleanup if needed
+        return
