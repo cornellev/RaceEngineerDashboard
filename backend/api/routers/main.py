@@ -14,7 +14,7 @@ Placeholder data access functions
 Replace these with actual PostgreSQL / ROS / Redis logic
 """
 
-async def read_snapshot():
+def read_snapshot():
     """
     Get the latest snapshot of all sensor data.
     """
