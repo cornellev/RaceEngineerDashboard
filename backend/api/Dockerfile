@@ -20,10 +20,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy shared utilities
-COPY utils/ ./utils/
-
-# Copy application code
-COPY api/ ./api/
+COPY . .
 
 # Expose port
 EXPOSE 8000

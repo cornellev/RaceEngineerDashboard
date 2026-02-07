@@ -38,12 +38,10 @@ services:
 
   api:
     build:
-      context: .
+      context: api
       dockerfile: Dockerfile
     ports:
       - 8000:8000
-    volumes:
-      - ./api:/app/api  # Mount for development hot-reload
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -62,10 +60,8 @@ services:
 
   subscriber:
     build:
-      context: .
-      dockerfile: subscriber/Dockerfile
-    volumes:
-      - ./subscriber:/app  # Mount for development
+      context: subscriber
+      dockerfile: Dockerfile
     environment:
       - POSTGRES_HOST=localhost  # Use localhost with host network mode
       - POSTGRES_PORT=5435  # Use host-exposed port (5435:5432)
