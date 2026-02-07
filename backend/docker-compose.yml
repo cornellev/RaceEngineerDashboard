@@ -40,6 +40,8 @@ services:
       POSTGRES_USER: postgres
     ports:
       - 5435:5432
+    volumes:
+      - postgres:/var/lib/postgresql/data
     restart: on-failure:3
     networks:
       - redis-network
@@ -94,15 +96,15 @@ services:
       context: subscriber
       dockerfile: Dockerfile
     environment:
-      - POSTGRES_HOST=postgres  # Use service name
-      - POSTGRES_PORT=5432  # Use internal port
+      - POSTGRES_HOST=postgres # Use service name
+      - POSTGRES_PORT=5432 # Use internal port
       - POSTGRES_DB=telemetry_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - REDIS_HOST=redis  # Use service name
+      - REDIS_HOST=redis # Use service name
       - REDIS_PORT=6379
       - REDIS_DB=0
-      - ROS_DOMAIN_ID=14  # ROS 2 domain ID (set to 14)
+      - ROS_DOMAIN_ID=14 # ROS 2 domain ID (set to 14)
     depends_on:
       - postgres
       - redis
@@ -126,6 +128,7 @@ services:
 volumes:
   redis:
   redis-config:
+  postgres:
   ts-authkey-container:
     driver: local
 
