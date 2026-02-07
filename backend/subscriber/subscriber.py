@@ -3,9 +3,9 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 import json
-import os
-import psycopg2
-import redis
+from utils.config import settings
+from utils.database import get_db_connection, return_db_connection
+from utils.redis_client import get_redis_client
 
 class SpiSubscriber(Node):
     def __init__(self):
@@ -22,32 +22,15 @@ class SpiSubscriber(Node):
         )
         self.subscription  # prevent unused variable warning
         
-        # Database connection settings from environment variables
-        self.postgres_host = os.getenv('POSTGRES_HOST', 'postgres')
-        self.postgres_port = int(os.getenv('POSTGRES_PORT', '5432'))
-        self.postgres_db = os.getenv('POSTGRES_DB', 'telemetry_db')
-        self.postgres_user = os.getenv('POSTGRES_USER', 'postgres')
-        self.postgres_password = os.getenv('POSTGRES_PASSWORD', 'password')
-        
-        self.redis_host = os.getenv('REDIS_HOST', 'redis')
-        self.redis_port = int(os.getenv('REDIS_PORT', '6379'))
-        self.redis_db = int(os.getenv('REDIS_DB', '0'))
-        
         # Initialize database connections
         self.init_databases()
 
     def init_databases(self):
         """Initialize PostgreSQL and Redis connections."""
-        # PostgreSQL connection
+        # PostgreSQL - initialize connection pool and create table
         try:
-            self.pg_conn = psycopg2.connect(
-                host=self.postgres_host,
-                port=self.postgres_port,
-                database=self.postgres_db,
-                user=self.postgres_user,
-                password=self.postgres_password
-            )
-            self.pg_cursor = self.pg_conn.cursor()
+            conn = get_db_connection()
+            cursor = conn.cursor()
             
             # Create table if not exists
             create_table_query = """
@@ -57,23 +40,17 @@ class SpiSubscriber(Node):
                 payload JSONB
             );
             """
-            self.pg_cursor.execute(create_table_query)
-            self.pg_conn.commit()
-            self.get_logger().info('Connected to PostgreSQL and created table')
+            cursor.execute(create_table_query)
+            conn.commit()
+            cursor.close()
+            return_db_connection(conn)
+            self.get_logger().info('PostgreSQL connection pool initialized and table created')
         except Exception as e:
-            self.get_logger().error(f'Failed to connect to PostgreSQL: {e}')
-            self.pg_conn = None
-            self.pg_cursor = None
+            self.get_logger().error(f'Failed to initialize PostgreSQL: {e}')
         
-        # Redis connection
+        # Redis connection - using shared utility
         try:
-            self.redis_client = redis.Redis(
-                host=self.redis_host,
-                port=self.redis_port,
-                db=self.redis_db,
-                decode_responses=True
-            )
-            self.redis_client.ping()
+            self.redis_client = get_redis_client()
             self.get_logger().info('Connected to Redis')
         except Exception as e:
             self.get_logger().error(f'Failed to connect to Redis: {e}')
@@ -82,38 +59,49 @@ class SpiSubscriber(Node):
     def listener_callback(self, msg):
         try:
             data = json.loads(msg.data)  # convert JSON string back to dict
-            self.get_logger().debug(f"Received SPI data: {data}")
+            self.get_logger().info(f"Received SPI data: {data}")
             
-            # Write to PostgreSQL
-            if self.pg_cursor and self.pg_conn:
-                try:
-                    insert_query = "INSERT INTO race_data (payload) VALUES (%s::jsonb);"
-                    self.pg_cursor.execute(insert_query, (json.dumps(data),))
-                    self.pg_conn.commit()
-                    self.get_logger().debug('Inserted data into PostgreSQL')
-                except Exception as e:
-                    self.get_logger().error(f'PostgreSQL insert error: {e}')
-                    self.pg_conn.rollback()
+            # Write to PostgreSQL using connection pool
+            conn = None
+            cursor = None
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                insert_query = "INSERT INTO race_data (payload) VALUES (%s::jsonb);"
+                cursor.execute(insert_query, (json.dumps(data),))
+                conn.commit()
+                self.get_logger().info('Inserted data into PostgreSQL')
+            except Exception as e:
+                self.get_logger().error(f'PostgreSQL insert error: {e}')
+                if conn:
+                    conn.rollback()
+            finally:
+                if cursor:
+                    cursor.close()
+                if conn:
+                    return_db_connection(conn)
             
             # Write to Redis (latest value)
             if self.redis_client:
                 try:
                     self.redis_client.set('latest_telemetry', json.dumps(data))
-                    self.get_logger().debug('Updated Redis with latest data')
+                    self.get_logger().info('Updated Redis with latest data')
                 except Exception as e:
                     self.get_logger().error(f'Redis update error: {e}')
+            else:
+                self.get_logger().warn('Redis connection not available')
                     
-        except json.JSONDecodeError:
-            self.get_logger().warn(f"Failed to decode message: {msg.data}")
+        except json.JSONDecodeError as e:
+            self.get_logger().error(f"Failed to decode message: {msg.data}, error: {e}")
+        except Exception as e:
+            self.get_logger().error(f"Unexpected error in callback: {e}")
     
     def destroy_node(self):
         """Clean up database connections."""
-        if self.pg_cursor:
-            self.pg_cursor.close()
-        if self.pg_conn:
-            self.pg_conn.close()
+        # Redis connection cleanup
         if self.redis_client:
             self.redis_client.close()
+        # PostgreSQL connection pool is managed globally, will be cleaned up on process exit
         self.get_logger().info('Database connections closed')
         super().destroy_node()
 

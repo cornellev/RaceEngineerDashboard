@@ -2,7 +2,7 @@ import asyncio
 import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from api.utils.database import get_db_connection, return_db_connection
+from utils.database import get_db_connection, return_db_connection
 
 app = FastAPI()
 

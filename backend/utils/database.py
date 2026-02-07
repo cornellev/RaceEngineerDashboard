@@ -2,7 +2,7 @@
 import psycopg2
 from psycopg2 import pool, Error
 from typing import Optional
-from api.config import settings
+from utils.config import settings
 
 
 # Connection pool (will be initialized on first use)

@@ -1,4 +1,5 @@
-from fastapi import FastAPI, WebSocket
+from typing import Optional
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 app = FastAPI()
 
@@ -140,7 +141,7 @@ async def websocket_endpoint(websocket : WebSocket):
 
             # 1) Full snapshot (replaces GET /snapshot)
             if msg_type == "get_snapshot":
-                snapshot = read_snapshot()
+                snapshot = await read_snapshot()
                 await websocket.send_json(
                     {
                         "type": "snapshot",
@@ -153,19 +154,19 @@ async def websocket_endpoint(websocket : WebSocket):
                 category: str = msg.get("category", "")
                 snapshot_category = read_snapshot_category(category)
 
-                if category in snapshot:
+                if "error" in snapshot_category:
                     await websocket.send_json(
                         {
-                            "type": "snapshot_category",
-                            "category": category,
-                            "data": snapshot_category,
+                            "type": "error",
+                            "message": snapshot_category.get("error", "Invalid category"),
                         }
                     )
                 else:
                     await websocket.send_json(
                         {
-                            "type": "error",
-                            "message": f"Invalid category: {category}",
+                            "type": "snapshot_category",
+                            "category": category,
+                            "data": snapshot_category,
                         }
                     )
 
