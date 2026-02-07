@@ -25,7 +25,7 @@ def get_redis_client() -> redis.Redis:
                 host=settings.REDIS_HOST,
                 port=settings.REDIS_PORT,
                 db=settings.REDIS_DB,
-                decode_responses=True,  # Automatically decode responses to strings
+                decode_responses=True,
                 socket_connect_timeout=5,
                 socket_timeout=5
             )
@@ -37,16 +37,4 @@ def get_redis_client() -> redis.Redis:
             raise ConnectionError(f"Redis connection error: {e}")
     
     return _redis_client
-
-
-def close_redis_client():
-    """Close Redis client connection."""
-    global _redis_client
-    if _redis_client:
-        try:
-            _redis_client.close()
-        except Exception:
-            pass
-        finally:
-            _redis_client = None
 

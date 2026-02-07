@@ -1,6 +1,37 @@
 # docker-compose.yml
 
 services:
+  tailscale:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.tailscale
+    image: tailscale/tailscale:latest
+    container_name: ts-race-authkey-container
+    hostname: race-engineer-dashboard-tailscale-service
+    environment:
+      - TS_CLIENT_ID=${TS_CLIENT_ID:-}
+      - TS_CLIENT_SECRET=${TS_CLIENT_SECRET:-}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_AUTH_ONCE=true
+      - TS_EXTRA_ARGS=--advertise-tags=tag:ros-device --ssh=true
+      - TAILSCALE_TAG_NAME=tag:ros-device
+    volumes:
+      - ts-authkey-container:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+      - .:/workspace
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    healthcheck:
+      test: ["CMD", "test", "-f", "/workspace/fast.xml"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    networks:
+      - redis-network
+
   postgres:
     image: postgres:alpine
     environment:
@@ -63,22 +94,21 @@ services:
       context: subscriber
       dockerfile: Dockerfile
     environment:
-      - POSTGRES_HOST=localhost  # Use localhost with host network mode
-      - POSTGRES_PORT=5435  # Use host-exposed port (5435:5432)
+      - POSTGRES_HOST=postgres  # Use service name
+      - POSTGRES_PORT=5432  # Use internal port
       - POSTGRES_DB=telemetry_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - REDIS_HOST=localhost  # Use localhost with host network mode
+      - REDIS_HOST=redis  # Use service name
       - REDIS_PORT=6379
       - REDIS_DB=0
       - ROS_DOMAIN_ID=14  # ROS 2 domain ID (set to 14)
     depends_on:
       - postgres
       - redis
+      - tailscale
     restart: on-failure:3
-    # Host network mode for ROS discovery over Tailscale/VPN
-    # Note: With host network, can't use Docker service names - must use localhost
-    network_mode: "host"
+    network_mode: service:tailscale
 
   redis-commander:
     image: rediscommander/redis-commander:latest
@@ -96,6 +126,8 @@ services:
 volumes:
   redis:
   redis-config:
+  ts-authkey-container:
+    driver: local
 
 networks:
   redis-network:

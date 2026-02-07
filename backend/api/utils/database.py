@@ -60,4 +60,3 @@ def return_db_connection(conn):
             _connection_pool.putconn(conn)
         except Exception as e:
             print(f"Error returning connection to pool: {e}")
-

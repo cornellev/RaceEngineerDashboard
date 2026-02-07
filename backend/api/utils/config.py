@@ -11,13 +11,7 @@ class Settings:
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "telemetry_db")
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
     POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "password")
-    
-    # Redis settings
-    REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
-    REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
-    REDIS_DB: int = int(os.getenv("REDIS_DB", "0"))
 
 
 # Global settings instance
 settings = Settings()
-
