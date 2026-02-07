@@ -65,6 +65,7 @@ export default function InteractiveGrid() {
             { id: "leftAxisId", width: 50 },
             { id: "rightAxisId", position: "right" },
           ]}
+          skipAnimation={true}
           sx={{
             // Axis lines
             ".MuiChartsAxis-root .MuiChartsAxis-line": {
@@ -227,6 +228,10 @@ export default function InteractiveGrid() {
                 },
               }}
             />
+          </div>
+          <div className="w-6/10 flex items-center justify-between flex-row text-2xl">
+            <strong>Front</strong>
+            <strong>Rear</strong>
           </div>
         </div>
       </GridCard>
