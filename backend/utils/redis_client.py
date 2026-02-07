@@ -1,7 +1,7 @@
 """Redis client connection utilities."""
 import redis
 from typing import Optional
-from api.config import settings
+from utils.config import settings
 
 
 # Global Redis client instance

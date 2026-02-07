@@ -17,10 +17,14 @@ COPY subscriber/requirements.txt .
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir -r requirements.txt
 
+# Copy shared utilities (config)
+COPY utils ./utils
+
 # Copy subscriber code (build context is backend/, so path is subscriber/subscriber.py)
 COPY subscriber/subscriber.py ./subscriber.py
 
 # Source ROS 2 setup and run subscriber
 # Note: ROS 2 needs to be sourced in each command
-CMD ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && cd /app && python3 subscriber.py"]
+# ROS_DOMAIN_ID is set via environment variable from docker-compose
+CMD ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-14} && cd /app && python3 subscriber.py"]
 
