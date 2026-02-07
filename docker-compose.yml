@@ -1,8 +1,5 @@
 services:
   tailscale:
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile.tailscale
     image: tailscale/tailscale:latest
     container_name: ts-race-authkey-container
     hostname: race-engineer-dashboard-tailscale-service
@@ -28,7 +25,7 @@ services:
       retries: 30
       start_period: 10s
     networks:
-      - redis-network
+      - app-network
 
   postgres:
     image: postgres:alpine
@@ -36,10 +33,8 @@ services:
       POSTGRES_DB: telemetry_db
       POSTGRES_PASSWORD: password
       POSTGRES_USER: postgres
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
     ports:
-      - 5435:5432
+      - "5435:5432"
     volumes:
       - postgres:/var/lib/postgresql/data
     restart: on-failure:3
@@ -50,7 +45,7 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - redis-network
+      - app-network
 
   pgweb:
     image: sosedoff/pgweb
@@ -59,10 +54,10 @@ services:
     environment:
       PGWEB_DATABASE_URL: postgres://postgres:password@postgres:5432/telemetry_db?sslmode=disable
     ports:
-      - 8085:8081
+      - "8085:8081"
     restart: on-failure:3
     networks:
-      - redis-network
+      - app-network
 
   redis:
     image: redis:latest
@@ -71,16 +66,16 @@ services:
       - redis:/var/lib/redis
       - redis-config:/usr/local/etc/redis/redis.conf
     ports:
-      - 6379:6379
+      - "6379:6379"
     networks:
-      - redis-network
+      - app-network
 
   api:
     build:
-      context: api
+      context: ./backend/api
       dockerfile: Dockerfile
     ports:
-      - 8000:8000
+      - "8000:8000"
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -95,22 +90,22 @@ services:
       - redis
     restart: on-failure:3
     networks:
-      - redis-network
+      - app-network
 
   subscriber:
     build:
-      context: subscriber
+      context: ./backend/subscriber
       dockerfile: Dockerfile
     environment:
-      - POSTGRES_HOST=postgres # Use service name
-      - POSTGRES_PORT=5432 # Use internal port
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
       - POSTGRES_DB=telemetry_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - REDIS_HOST=redis # Use service name
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0
-      - ROS_DOMAIN_ID=14 # ROS 2 domain ID (set to 14)
+      - ROS_DOMAIN_ID=14
     depends_on:
       postgres:
         condition: service_healthy
@@ -128,11 +123,25 @@ services:
       - HTTP_USER=root
       - HTTP_PASSWORD=password
     ports:
-      - 8081:8081
-    networks:
-      - redis-network
+      - "8081:8081"
     depends_on:
       - redis
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    environment:
+      # use service name, not localhost
+      - API_BASE_URL=http://api:8000
+    networks:
+      - app-network
 
 volumes:
   redis:
@@ -142,5 +151,5 @@ volumes:
     driver: local
 
 networks:
-  redis-network:
+  app-network:
     driver: bridge
