@@ -18,6 +18,10 @@
   --primary-accent: #c41e3a;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 a {
   font-weight: 500;
   color: white;

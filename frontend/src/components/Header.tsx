@@ -1,6 +1,10 @@
 import logo from "/logo.svg";
 
-export default function Header(props: { setPage: (page: string) => void }) {
+export default function Header(props: {
+  setPage: (page: string) => void;
+  setSideBar: (open: boolean) => void;
+  sideBar: boolean;
+}) {
   return (
     <header className="fixed top-0 left-0 right-0 z-100 bg-linear-to-r from-[#232526] to-[#252628] shadow-[0_4px_16px_rgba(239,68,60,0.1)]">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -17,6 +21,7 @@ export default function Header(props: { setPage: (page: string) => void }) {
           <a
             href="#racegpt"
             className="transition-colors duration-200 font-medium"
+            onClick={() => props.setPage("racegpt")}
           >
             RaceGPT
           </a>
@@ -37,7 +42,12 @@ export default function Header(props: { setPage: (page: string) => void }) {
           {/* Hamburger Menu */}
           <label className="swap swap-rotate group">
             {/* this hidden checkbox controls the state */}
-            <input type="checkbox" />
+            <input
+              type="checkbox"
+              onClick={() => {
+                props.setSideBar(!props.sideBar);
+              }}
+            />
 
             {/* hamburger icon */}
             <svg
