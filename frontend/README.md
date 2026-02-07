@@ -9,6 +9,16 @@ to start a dev environment.
 bun dev
 ```
 
+To build and run the frontend UI as a Docker container. Run the following two
+commands in the frontend directory.
+
+```
+docker build -t frontend .
+docker run -d -p 3000:3000 --name frontend frontend
+```
+
+The container should be running in the background locally on port 3000
+
 ## Design
 
 ## React + TypeScript + Vite
