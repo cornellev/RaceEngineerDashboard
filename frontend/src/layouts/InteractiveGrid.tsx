@@ -237,7 +237,7 @@ export default function InteractiveGrid() {
       </GridCard>
       <GridCard width="5 / span 2" height="1 / span 1">
         <div className="w-full h-full flex items-center justify-center text-sm text-gray-400 flex-col gap-1">
-          <h1>Battery</h1>
+          <h1>Efficiency</h1>
           <Gauge
             width={150}
             height={150}
