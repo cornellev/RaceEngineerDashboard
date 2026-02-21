@@ -29,12 +29,10 @@ function App() {
   useEffect(() => {
     socket.connect();
 
-    // 2. Subscribe to incoming messages
     const unsubscribe = socket.subscribe((data) => {
-      setMessages((prev) => prev + "\n" + data.text);
+      setMessages(JSON.stringify(data));
     });
 
-    // 3. Cleanup on unmount
     return () => unsubscribe();
   }, []);
 
@@ -42,8 +40,8 @@ function App() {
     <>
       <Header setPage={setPage} setSideBar={setSideBar} sideBar={sideBar} />
       <SideBar open={sideBar} />
-      {/*{getPageComponent()}*/}
-      <p>{messages}</p>
+      {/*getPageComponent()*/}
+      {<p className="text-white">JSON: {messages}</p>}
     </>
   );
 }
