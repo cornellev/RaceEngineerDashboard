@@ -2,6 +2,8 @@ import asyncio
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+import rclpy
+from subscriber.subscriber import DataSubscriber
 
 app = FastAPI()
 
@@ -14,11 +16,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-""""""""""""""""""""""""""""""""""""""""""""""""""
-"""TODO: Implement the ROS subscriber data here"""
-""""""""""""""""""""""""""""""""""""""""""""""""""
+async def lifespan(app: FastAPI):
+    rclpy.init()
+    app.state.node = DataSubscriber("spi_data")
+    yield
+    app.state.node.destroy_node()
+    rclpy.shutdown()
+
 async def fetch_race_data():
-    return 1
+    rclpy.spin_once(app.state.node, timeout_sec=0.05)
+    data, stamp = app.state.node.get_latest()
+    return data
 
 @app.get("/")
 def root():
