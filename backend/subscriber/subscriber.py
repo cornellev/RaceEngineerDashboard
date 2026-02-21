@@ -39,8 +39,7 @@ class DataSubscriber(Node):
             self.get_logger().error(f"Unexpected error in callback: {e}")
             return
 
-        # Prob comment this out lol
-        self.get_logger().info(f"Received data: {self._latest_data}")
+        #self.get_logger().info(f"Received data: {self._latest_data}")
 
     # Returns (data_dict_or_None, recv_time_ns_or_None)
     def get_latest(self):
@@ -49,13 +48,17 @@ class DataSubscriber(Node):
     def destroy_node(self):
         super().destroy_node()
 
+# use to test
 def main(args=None):
     rclpy.init(args=args)
     node = DataSubscriber("spi_data")
     try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+        while rclpy.ok(): 
+            rclpy.spin_once(node, timeout_sec=0.075) #time between ros2 spin calls; adjust
+            data, stamp = node.get_latest()
+            if data is not None:
+                print("Latest:", data, "stamp_ns:", stamp)
+                break
     finally:
         node.destroy_node()
         rclpy.shutdown()
