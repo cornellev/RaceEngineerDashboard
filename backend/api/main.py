@@ -4,8 +4,17 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import rclpy
 from subscriber.subscriber import DataSubscriber
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    rclpy.init()
+    app.state.node = DataSubscriber("spi_data")
+    yield
+    app.state.node.destroy_node()
+    rclpy.shutdown()
+
+app = FastAPI(lifespan=lifespan)
 
 # Add CORS middleware to allow frontend connections
 app.add_middleware(
@@ -15,13 +24,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-async def lifespan(app: FastAPI):
-    rclpy.init()
-    app.state.node = DataSubscriber("spi_data")
-    yield
-    app.state.node.destroy_node()
-    rclpy.shutdown()
 
 async def fetch_race_data():
     rclpy.spin_once(app.state.node, timeout_sec=0.05)
