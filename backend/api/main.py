@@ -1,16 +1,24 @@
 import asyncio
-import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import rclpy
 from subscriber.subscriber import DataSubscriber
 from contextlib import asynccontextmanager
+import threading
+
+def ros_spin(node):
+    while node.running:
+        rclpy.spin_once(node, timeout_sec=0.05)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     rclpy.init()
     app.state.node = DataSubscriber("spi_data")
+    app.state.ros_thread = threading.Thread(target=ros_spin, args=(app.state.node,), daemon=True)
+    app.state.ros_thread.start()
     yield
+    app.state.node.running = False
+    app.state.ros_thread.join()
     app.state.node.destroy_node()
     rclpy.shutdown()
 
@@ -26,7 +34,6 @@ app.add_middleware(
 )
 
 async def fetch_race_data():
-    rclpy.spin_once(app.state.node, timeout_sec=0.05)
     data, stamp = app.state.node.get_latest()
     return data
 
@@ -40,23 +47,31 @@ async def websocket_stream(websocket: WebSocket):
     await websocket.accept()
     last_seen_id = 0
 
-    while True:
-        # Example: Fetch new data from DB (pseudo-code)
-        new_data = await fetch_race_data() # Returns list of dicts
-        
-        if new_data:
-            json_payload = {
-                "seq": last_seen_id,               # read_snapshot()[0]
-                "data" : new_data
-            }
+    try:
+        while True:
+            # Example: Fetch new data from DB (pseudo-code)
+            new_data = await fetch_race_data() # Returns list of dicts
             
-            # Option 1: Auto-serialize dict to JSON (recommended)
-            await websocket.send_json(json_payload)
+            if new_data:
+                json_payload = {
+                    "seq": last_seen_id,               # read_snapshot()[0]
+                    "data" : new_data
+                }
+                
+                # Option 1: Auto-serialize dict to JSON (recommended)
+                await websocket.send_json(json_payload)
+                
+                # Option 2: Manual JSON string
+                # json_str = json.dumps(json_payload)
+                # await websocket.send_text(json_str)
+                
+                last_seen_id += 1
             
-            # Option 2: Manual JSON string
-            # json_str = json.dumps(json_payload)
-            # await websocket.send_text(json_str)
-            
-            last_seen_id += 1
-        
-        await asyncio.sleep(0.1)  # Poll interval; replace with DB trigger if possible
+            await asyncio.sleep(0.1)  # Poll interval; replace with DB trigger if possible
+    except WebSocketDisconnect:
+        # Client disconnected, this is normal
+        pass
+    except Exception as e:
+        # Log other errors
+        print(f"WebSocket error: {e}")
+        raise

@@ -3,6 +3,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 import json
 from rclpy.qos import QoSProfile
+import threading
 
 class DataSubscriber(Node):
     def __init__(self, topic):
@@ -12,7 +13,9 @@ class DataSubscriber(Node):
 
         self._latest_raw = None          # latest raw JSON string
         self._latest_data = None         # latest decoded dict
-        self._latest_stamp_ns = None     # time received (node clock)
+        self._latest_stamp_ns = None
+        self._lock = threading.Lock() # lock for thread-safe access to latest data
+        self.running = True
 
         qos = QoSProfile(depth=1)  # keep only the newest message
         
@@ -25,11 +28,9 @@ class DataSubscriber(Node):
         self.subscription  # prevent unused variable warning
 
     def listener_callback(self, msg: String):
-        self._latest_raw = msg.data
-        self._latest_stamp_ns = self.get_clock().now().nanoseconds
-
+        
         try:
-            self._latest_data = json.loads(msg.data)
+            data = json.loads(msg.data)
         except json.JSONDecodeError as e:
             self._latest_data = None
             self.get_logger().error(f"Failed to decode message: {msg.data}, error: {e}")
@@ -39,11 +40,17 @@ class DataSubscriber(Node):
             self.get_logger().error(f"Unexpected error in callback: {e}")
             return
 
+        with self._lock:
+            self._latest_data = data
+            self._latest_raw = msg.data
+            self._latest_stamp_ns = self.get_clock().now().nanoseconds
+
         #self.get_logger().info(f"Received data: {self._latest_data}")
 
     # Returns (data_dict_or_None, recv_time_ns_or_None)
     def get_latest(self):
-        return self._latest_data, self._latest_stamp_ns
+        with self._lock: 
+            return self._latest_data, self._latest_stamp_ns
     
     def destroy_node(self):
         super().destroy_node()
