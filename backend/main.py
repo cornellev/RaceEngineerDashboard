@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import rclpy
 from rclpy.wait_for_message import wait_for_message
 from std_msgs.msg import String
-from subscriber.subscriber import DataSubscriber
+from subscriber import DataSubscriber
 from contextlib import asynccontextmanager
 
 def ros_wait_loop(node: DataSubscriber, topic: str, stop_evt: threading.Event, q: queue.Queue):

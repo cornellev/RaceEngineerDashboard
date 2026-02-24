@@ -27,49 +27,6 @@ services:
     networks:
       - app-network
 
-  postgres:
-    image: postgres:alpine
-    environment:
-      POSTGRES_DB: telemetry_db
-      POSTGRES_PASSWORD: password
-      POSTGRES_USER: postgres
-    ports:
-      - "5435:5432"
-    volumes:
-      - postgres:/var/lib/postgresql/data
-    restart: on-failure:3
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d telemetry_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - app-network
-
-  pgweb:
-    image: sosedoff/pgweb
-    depends_on:
-      - postgres
-    environment:
-      PGWEB_DATABASE_URL: postgres://postgres:password@postgres:5432/telemetry_db?sslmode=disable
-    ports:
-      - "8085:8081"
-    restart: on-failure:3
-    networks:
-      - app-network
-
-  redis:
-    image: redis:latest
-    command: redis-server
-    volumes:
-      - redis:/var/lib/redis
-      - redis-config:/usr/local/etc/redis/redis.conf
-    ports:
-      - "6379:6379"
-    networks:
-      - app-network
-
   api:
     build:
       context: ./backend/api
@@ -116,19 +73,6 @@ services:
     restart: on-failure:3
     network_mode: service:tailscale
 
-  redis-commander:
-    image: rediscommander/redis-commander:latest
-    environment:
-      - REDIS_HOSTS=local:redis:6379
-      - HTTP_USER=root
-      - HTTP_PASSWORD=password
-    ports:
-      - "8081:8081"
-    depends_on:
-      - redis
-    networks:
-      - app-network
-
   frontend:
     build:
       context: ./frontend
@@ -144,9 +88,6 @@ services:
       - app-network
 
 volumes:
-  redis:
-  redis-config:
-  postgres:
   ts-authkey-container:
     driver: local
 
