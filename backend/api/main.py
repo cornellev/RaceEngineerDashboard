@@ -108,10 +108,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-async def fetch_race_data():
-    data, stamp = app.state.node.get_latest()
-    return data
-
 @app.get("/")
 def root():
     """Health check endpoint."""
