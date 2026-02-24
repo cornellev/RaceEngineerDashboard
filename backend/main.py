@@ -12,8 +12,9 @@ from contextlib import asynccontextmanager
 
 def ros_wait_loop(node: DataSubscriber, topic: str, stop_evt: threading.Event, q: queue.Queue):
     while not stop_evt.is_set():
-        msg = wait_for_message(String, node, topic, time_to_wait=0.05) # at 200Hz should be 10x faster
-        if msg is None:
+        # wait_for_message returns (success, msg) in ROS 2 Humble+
+        success, msg = wait_for_message(String, node, topic, time_to_wait=0.05) # at 200Hz should be 10x faster
+        if not success or msg is None:
             continue
 
         node.listener_callback(msg) # manually give node message (not using rclpy.spin_once)

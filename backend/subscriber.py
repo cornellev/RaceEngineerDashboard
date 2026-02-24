@@ -30,6 +30,7 @@ class DataSubscriber(Node):
     def listener_callback(self, msg: String):
         
         try:
+            print(msg)
             data = json.loads(msg.data)
         except json.JSONDecodeError as e:
             self._latest_data = None
