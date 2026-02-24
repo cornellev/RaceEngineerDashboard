@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 
 def ros_wait_loop(node: DataSubscriber, topic: str, stop_evt: threading.Event, q: queue.Queue):
     while not stop_evt.is_set():
-        msg = wait_for_message(String, node, topic, timeout_sec=0.05) # at 200Hz should be 10x faster
+        msg = wait_for_message(String, node, topic, time_to_wait=0.05) # at 200Hz should be 10x faster
         if msg is None:
             continue
 
@@ -125,3 +125,7 @@ async def websocket_stream(websocket: WebSocket):
         pass
     finally: 
         app.state.clients.discard(websocket)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
