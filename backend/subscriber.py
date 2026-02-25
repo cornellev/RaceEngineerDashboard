@@ -46,7 +46,7 @@ class DataSubscriber(Node):
             self._latest_raw = msg.data
             self._latest_stamp_ns = self.get_clock().now().nanoseconds
 
-        #self.get_logger().info(f"Received data: {self._latest_data}")
+        self.get_logger().info(f"Received data: {self._latest_data}")
 
     # Returns (data_dict_or_None, recv_time_ns_or_None)
     def get_latest(self):
@@ -64,9 +64,9 @@ def main(args=None):
         while rclpy.ok(): 
             rclpy.spin_once(node, timeout_sec=0.075) #time between ros2 spin calls; adjust
             data, stamp = node.get_latest()
-            if data is not None:
-                print("Latest:", data, "stamp_ns:", stamp)
-                break
+            # if data is not None:
+            #     print("Latest:", data, "stamp_ns:", stamp)
+            #     break
     finally:
         node.destroy_node()
         rclpy.shutdown()
