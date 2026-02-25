@@ -34,6 +34,9 @@ services:
     ports:
       - "8000:8000"
     restart: on-failure:3
+    environment:
+      - ROS_DOMAIN_ID=14
+      - ROS_LOCALHOST_ONLY=0
     networks:
       - app-network
 
