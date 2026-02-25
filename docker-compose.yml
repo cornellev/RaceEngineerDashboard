@@ -14,31 +14,24 @@ services:
     volumes:
       - ts-authkey-container:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
-      - .:/workspace
     cap_add:
       - NET_ADMIN
       - NET_RAW
-    healthcheck:
-      test: ["CMD", "test", "-f", "/workspace/fast.xml"]
-      interval: 2s
-      timeout: 5s
-      retries: 30
-      start_period: 10s
-    networks:
-      - app-network
+    ports:
+      - "8000:8000"
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
     restart: on-failure:3
     environment:
       - ROS_DOMAIN_ID=14
       - ROS_LOCALHOST_ONLY=0
-    networks:
-      - app-network
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
 
   frontend:
     build:
