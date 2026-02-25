@@ -8,14 +8,32 @@ import rclpy
 from rclpy.executors import SingleThreadedExecutor
 from subscriber import DataSubscriber
 from contextlib import asynccontextmanager
+import math
+
+def sanitize_json(x):
+    if isinstance(x, float):
+        if math.isnan(x) or math.isinf(x):
+            return None
+        return x
+    if isinstance(x, dict):
+        return {k: sanitize_json(v) for k, v in x.items()}
+    if isinstance(x, list):
+        return [sanitize_json(v) for v in x]
+    if isinstance(x, tuple):
+        return [sanitize_json(v) for v in x]
+    return x
 
 def ros_spin_loop(node: DataSubscriber, stop_evt: threading.Event, q: queue.Queue):
     ex = SingleThreadedExecutor()
     ex.add_node(node)
     last_stamp = None
     try:
+        i = 0
         while rclpy.ok() and not stop_evt.is_set():
             ex.spin_once(timeout_sec=0.1)
+            i += 1
+            if i % 50 == 0:
+                print("[ROS] spinning...")
 
             data, stamp = node.get_latest()
             if data is None or stamp is None:
@@ -54,6 +72,7 @@ async def broadcaster(app: FastAPI):
         
         # also send ROS timestamp for debugging purposes
         payload = {"seq": seq, "data": data, "stamp_ns": stamp}
+        payload = sanitize_json(payload)
         seq += 1
 
         dead = []
