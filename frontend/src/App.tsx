@@ -13,7 +13,7 @@ function App() {
   const [page, setPage] = useState("home");
   const [sideBar, setSideBar] = useState(false);
   const [messages, setMessages] = useState("");
-
+  /*
   const getPageComponent = () => {
     switch (page) {
       case "home":
@@ -26,7 +26,7 @@ function App() {
         return <Home />;
     }
   };
-
+*/
   useEffect(() => {
     socket.connect();
 

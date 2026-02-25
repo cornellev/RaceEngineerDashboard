@@ -27,7 +27,7 @@ services:
     networks:
       - app-network
 
-  api:
+  backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -44,7 +44,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      - backend
     networks:
       - app-network
 
