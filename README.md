@@ -13,7 +13,8 @@
 
 ## Getting Started
 
-Create .env files for DB connections, Tailscale, etc.
+Create a `.env` file in the in the root directory (not under `/backend` or `/frontend`). 
+See `.env.example` for more info.
 
 Make sure Docker containers and volumes for this project are not running already.
 Then, run `docker compose up` to get all containers running.
