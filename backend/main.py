@@ -13,7 +13,8 @@ from contextlib import asynccontextmanager
 def ros_wait_loop(node: DataSubscriber, topic: str, stop_evt: threading.Event, q: queue.Queue):
     while not stop_evt.is_set():
         # wait_for_message returns (success, msg) in ROS 2 Humble+
-        success, msg = wait_for_message(String, node, topic, time_to_wait=0.05) # at 200Hz should be 10x faster
+        success, msg = wait_for_message(String, node, topic, time_to_wait=1) # at 200Hz should be 10x faster
+        print("ROS wait loop: success =", success, "msg =", msg)
         if not success or msg is None:
             continue
 
@@ -52,6 +53,7 @@ async def broadcaster(app: FastAPI):
         dead = []
         for ws in list(app.state.clients):
             try:
+                print(payload)
                 await ws.send_json(payload)
             except WebSocketDisconnect:
                 dead.append(ws)

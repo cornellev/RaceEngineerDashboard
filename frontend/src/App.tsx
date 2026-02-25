@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Data from "./pages/Data";
 import RaceGPT from "./pages/RaceGPT";
 import SideBar from "./components/SideBar";
+import Chart from "./components/Chart";
 
 import socket from "./utils/Socket";
 
@@ -30,6 +31,7 @@ function App() {
     socket.connect();
 
     const unsubscribe = socket.subscribe((data) => {
+      console.log("Received data from backend:", JSON.stringify(data));
       setMessages(JSON.stringify(data));
     });
 
@@ -42,6 +44,7 @@ function App() {
       <SideBar open={sideBar} />
       {/*getPageComponent()*/}
       {<p className="text-white">JSON: {messages}</p>}
+      <Chart />
     </>
   );
 }

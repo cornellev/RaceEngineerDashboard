@@ -29,49 +29,13 @@ services:
 
   api:
     build:
-      context: ./backend/api
+      context: ./backend
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=telemetry_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_DB=0
-    depends_on:
-      - postgres
-      - redis
     restart: on-failure:3
     networks:
       - app-network
-
-  subscriber:
-    build:
-      context: ./backend/subscriber
-      dockerfile: Dockerfile
-    environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=telemetry_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_DB=0
-      - ROS_DOMAIN_ID=14
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      tailscale:
-        condition: service_started
-    restart: on-failure:3
-    network_mode: service:tailscale
 
   frontend:
     build:
@@ -81,9 +45,6 @@ services:
       - "3000:3000"
     depends_on:
       - api
-    environment:
-      # use service name, not localhost
-      - API_BASE_URL=http://api:8000
     networks:
       - app-network
 
