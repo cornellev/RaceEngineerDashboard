@@ -5,31 +5,37 @@ import contextlib
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import rclpy
-from rclpy.wait_for_message import wait_for_message
-from std_msgs.msg import String
+from rclpy.executors import SingleThreadedExecutor
 from subscriber import DataSubscriber
 from contextlib import asynccontextmanager
 
-def ros_wait_loop(node: DataSubscriber, topic: str, stop_evt: threading.Event, q: queue.Queue):
-    while not stop_evt.is_set():
-        # wait_for_message returns (success, msg) in ROS 2 Humble+
-        success, msg = wait_for_message(String, node, topic, time_to_wait=1) # at 200Hz should be 10x faster
-        print("ROS wait loop: success =", success, "msg =", msg)
-        if not success or msg is None:
-            continue
+def ros_spin_loop(node: DataSubscriber, stop_evt: threading.Event, q: queue.Queue):
+    ex = SingleThreadedExecutor()
+    ex.add_node(node)
+    last_stamp = None
+    try:
+        while rclpy.ok() and not stop_evt.is_set():
+            ex.spin_once(timeout_sec=0.1)
 
-        node.listener_callback(msg) # manually give node message (not using rclpy.spin_once)
-        data, stamp = node.get_latest()
-        if data is None or stamp is None:
-            continue
-        q.put((data, stamp))
+            data, stamp = node.get_latest()
+            if data is None or stamp is None:
+                continue
 
-        # warning that queue is growing too fast for websocket to keep up sending to frontend
-        # warns every 500 messages over 2000
-        qs  = q.qsize()
-        if qs >= 2000 and (qs - 2000) % 500 == 0:
-            print(f"[WARNING] msg_queue backlog = {qs} items. "
-                  f"Producer is outpacing broadcaster; memory may grow.")
+            if last_stamp is not None and stamp <= last_stamp:
+                continue
+            last_stamp = stamp
+
+            # keep only the newest message (avoid unbounded queue growth)
+            try:
+                q.put_nowait((data, stamp))
+            except queue.Full:
+                try:
+                    q.get_nowait()
+                except queue.Empty:
+                    pass
+                q.put_nowait((data, stamp))
+    finally:
+        ex.remove_node(node)
 
 # broadcasts new messages to all clients without re-collecting ROS message per client
 # use a single producer to wait for next snapshot and then broadcast to all active sockets
@@ -76,11 +82,13 @@ async def lifespan(app: FastAPI):
     app.state.stop_evt = threading.Event()
 
     app.state.clients = set()
-    app.state.msg_queue = queue.Queue()
+
+    # bounded queue so newest snapshot always wins
+    app.state.msg_queue = queue.Queue(maxsize=1)
 
     app.state.ros_thread = threading.Thread(
-        target=ros_wait_loop, 
-        args=(app.state.node, topic, app.state.stop_evt, app.state.msg_queue), 
+        target=ros_spin_loop,
+        args=(app.state.node, app.state.stop_evt, app.state.msg_queue),
         daemon=True
     )
     # start ROS thread
@@ -122,8 +130,9 @@ async def websocket_stream(websocket: WebSocket):
     app.state.clients.add(websocket)
     
     try:
+        # keep socket alive; data is pushed from broadcaster
         while True:
-            await websocket.receive()
+            await asyncio.sleep(60)
     except WebSocketDisconnect:
         pass
     finally: 
