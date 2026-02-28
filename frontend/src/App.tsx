@@ -10,10 +10,10 @@ import socket from "./utils/Socket";
 import { useState, useEffect } from "react";
 
 function App() {
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState("dummy");
   const [sideBar, setSideBar] = useState(false);
   const [messages, setMessages] = useState("");
-  /*
+
   const getPageComponent = () => {
     switch (page) {
       case "home":
@@ -23,10 +23,14 @@ function App() {
       case "racegpt":
         return <RaceGPT />;
       default:
-        return <Home />;
+        return (
+          <>
+            <p className="text-white">JSON: {messages}</p>
+            <Chart />
+          </>
+        );
     }
   };
-*/
   useEffect(() => {
     socket.connect();
 
@@ -42,9 +46,11 @@ function App() {
     <>
       <Header setPage={setPage} setSideBar={setSideBar} sideBar={sideBar} />
       <SideBar open={sideBar} />
-      {/*getPageComponent()*/}
-      {<p className="text-white">JSON: {messages}</p>}
-      <Chart />
+      <main
+        className={`${sideBar ? "w-4/5" : "w-full"} h-full transition-all duration-300 ease-in-out ml-0 mt-20`}
+      >
+        {getPageComponent()}
+      </main>
     </>
   );
 }
