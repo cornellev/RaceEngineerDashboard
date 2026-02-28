@@ -143,6 +143,11 @@ def root():
     """Health check endpoint."""
     return {"message": "Race Telemetry API", "status": "running"}
 
+@app.get("/racegpt")
+def racegpt():
+    """Test endpoint for RaceGPT."""
+    return {"message": "Hello from RaceGPT!", "data": ""}
+
 @app.websocket("/ws/stream")
 async def websocket_stream(websocket: WebSocket):
     await websocket.accept()

@@ -1,5 +1,3 @@
-const apiURL = import.meta.env.API_BASE_URL;
-
 type MessageHandler = (data: any) => void;
 
 class SocketService {

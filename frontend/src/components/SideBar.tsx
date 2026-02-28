@@ -3,7 +3,7 @@ import { TextField } from "@mui/material";
 export default function SideBar({ open }: { open: boolean }) {
   return (
     <div
-      className={`w-1/5 h-full bg-[#232526] text-gray-400 p-4 fixed top-0 ${open ? "right-0" : "right-[-20%]"} z-99 transition-all duration-300 ease-in-out shadow-[-10px_0px_15px_-3px_rgba(0,0,0,0.1)] flex flex-col items-center justify-between`}
+      className={`min-w-64 h-full m-0 bg-[#232526] text-gray-400 p-4 fixed top-0 ${open ? "right-0" : "right-[min(-20%,calc(var(--spacing)*(-72)))]"} z-99 transition-all duration-300 ease-in-out shadow-[-10px_0px_15px_-3px_rgba(0,0,0,0.1)] flex flex-col items-center justify-between`}
     >
       <h2 className="text-lg font-bold mt-[25%]">
         RaceGPT Copilot Coming Soon
@@ -11,7 +11,7 @@ export default function SideBar({ open }: { open: boolean }) {
       <p>Nothing to see here.</p>
       <TextField
         id="filled-basic"
-        label="Enter your prompt here..."
+        label="Enter prompt frequency (s)"
         variant="filled"
         fullWidth
         sx={{
