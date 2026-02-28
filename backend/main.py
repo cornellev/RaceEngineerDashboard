@@ -1,7 +1,7 @@
 import asyncio
 import threading
-import queue
 import contextlib
+import collections
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import rclpy
@@ -9,6 +9,8 @@ from rclpy.executors import SingleThreadedExecutor
 from subscriber import DataSubscriber
 from contextlib import asynccontextmanager
 import math
+
+DEQUE_SIZE = 1000 # for snapshot
 
 def sanitize_json(x):
     if isinstance(x, float):
@@ -23,7 +25,7 @@ def sanitize_json(x):
         return [sanitize_json(v) for v in x]
     return x
 
-def ros_spin_loop(node: DataSubscriber, stop_evt: threading.Event, q: queue.Queue):
+def ros_spin_loop(node: DataSubscriber, stop_evt: threading.Event, history: collections.deque, data_ready: threading.Event):
     ex = SingleThreadedExecutor()
     ex.add_node(node)
     last_stamp = None
@@ -43,15 +45,9 @@ def ros_spin_loop(node: DataSubscriber, stop_evt: threading.Event, q: queue.Queu
                 continue
             last_stamp = stamp
 
-            # keep only the newest message (avoid unbounded queue growth)
-            try:
-                q.put_nowait((data, stamp))
-            except queue.Full:
-                try:
-                    q.get_nowait()
-                except queue.Empty:
-                    pass
-                q.put_nowait((data, stamp))
+            entry = (data, stamp)
+            history.append(entry)
+            data_ready.set()
     finally:
         ex.remove_node(node)
 
@@ -62,8 +58,11 @@ async def broadcaster(app: FastAPI):
     last_stamp = None
 
     while True:
-        # run queue.get() in a thread since it is blocking
-        data, stamp = await asyncio.to_thread(app.state.msg_queue.get)
+        await asyncio.to_thread(app.state.data_ready.wait, 1.0)
+        app.state.data_ready.clear()
+        if not app.state.history:
+            continue
+        data, stamp = app.state.history[-1]
 
         # only send new data
         if last_stamp is not None and stamp <= last_stamp:
@@ -102,12 +101,13 @@ async def lifespan(app: FastAPI):
 
     app.state.clients = set()
 
-    # bounded queue so newest snapshot always wins
-    app.state.msg_queue = queue.Queue(maxsize=1)
+    # deque: history for snapshot; [-1] is latest for frontend
+    app.state.history = collections.deque(maxlen=DEQUE_SIZE)
+    app.state.data_ready = threading.Event()
 
     app.state.ros_thread = threading.Thread(
         target=ros_spin_loop,
-        args=(app.state.node, app.state.stop_evt, app.state.msg_queue),
+        args=(app.state.node, app.state.stop_evt, app.state.history, app.state.data_ready),
         daemon=True
     )
     # start ROS thread
