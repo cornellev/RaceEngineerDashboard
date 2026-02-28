@@ -3,14 +3,21 @@ import { LineChart } from "@mui/x-charts/LineChart";
 import socket from "../utils/Socket";
 
 export default function Chart() {
-  const [time, setTime] = useState<number[]>([]);
-  const [voltage, setVoltage] = useState<number[]>([]);
+  const [time, setTime] = useState<number[]>(
+    Array.from({ length: 1000 }, (_, i) => i),
+  );
+  const [voltage, setVoltage] = useState<number[]>(
+    Array.from(
+      { length: 1000 },
+      () => Math.floor(Math.random() * (300 - 100 + 1)) + 100,
+    ),
+  );
 
   useEffect(() => {
     const unsubscribe = socket.subscribe((data) => {
       console.log("Received data from backend:", JSON.stringify(data));
-      setTime((prev) => [...prev, data.seq]);
-      setVoltage((prev) => [...prev, data.voltage]);
+      setTime((prev) => [...prev.slice(-2000), data.seq]);
+      setVoltage((prev) => [...prev.slice(-2000), data.voltage]);
     });
 
     return () => unsubscribe();
@@ -22,12 +29,16 @@ export default function Chart() {
       <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
         <LineChart
           xAxis={[{ data: time }]}
+          yAxis={[{ scaleType: "linear" }]}
           series={[
             {
+              type: "line",
+              showMark: false,
               data: voltage,
             },
           ]}
           height={300}
+          width={1000}
         />
       </div>
     </div>
