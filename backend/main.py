@@ -2,13 +2,14 @@ import asyncio
 import threading
 import contextlib
 import collections
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
 from subscriber import DataSubscriber
 from contextlib import asynccontextmanager
 import math
+import racegpt as racegpt_module
 
 DEQUE_SIZE = 1000 # for snapshot
 
@@ -143,11 +144,22 @@ def root():
     """Health check endpoint."""
     return {"message": "Race Telemetry API", "status": "running"}
 
+racegpt_lock = asyncio.Lock()
+
 @app.post("/racegpt")
-def racegpt(data: dict):
-    racegpt.send_serial_data(data)
-    response = racegpt.receive_serial_data()
-    """Test endpoint for RaceGPT."""
+async def racegpt(data: dict = Body(...)):
+    async with racegpt_lock:
+        await asyncio.to_thread(racegpt_module.send_serial_data, data)
+        try:
+            response = await asyncio.wait_for(
+                asyncio.to_thread(racegpt_module.receive_serial_data),
+                timeout=5.0,  # adjust as needed
+            )
+        except asyncio.TimeoutError:
+            response = None
+
+    if response is None:
+        raise HTTPException(status_code=504, detail="RaceGPT device did not respond")
     return {"message": "Hello from RaceGPT!", "data": response}
 
 @app.websocket("/ws/stream")
