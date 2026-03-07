@@ -11,14 +11,14 @@ services:
       - TS_AUTH_ONCE=true
       - TS_EXTRA_ARGS=--advertise-tags=tag:ros-device --ssh=true
       - TAILSCALE_TAG_NAME=tag:ros-device
+    ports:
+      - "8000:8000"
     volumes:
       - ts-authkey-container:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
     cap_add:
       - NET_ADMIN
       - NET_RAW
-    ports:
-      - "8000:8000"
 
   backend:
     build:
@@ -29,6 +29,7 @@ services:
       - ROS_DOMAIN_ID=14
       - ROS_LOCALHOST_ONLY=0
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      - ROS_DISCOVERY_SERVER=100.98.173.126:11811
     depends_on:
       - tailscale
     network_mode: service:tailscale

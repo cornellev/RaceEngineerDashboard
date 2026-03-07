@@ -36,7 +36,7 @@ def ros_spin_loop(node: DataSubscriber, stop_evt: threading.Event, history: coll
             ex.spin_once(timeout_sec=0.1)
             i += 1
             if i % 50 == 0:
-                print("[ROS] spinning...")
+                print("[ROS] spinning, waiting for data on spi_data...", flush=True)
 
             data, stamp = node.get_latest()
             if data is None or stamp is None:
@@ -47,6 +47,7 @@ def ros_spin_loop(node: DataSubscriber, stop_evt: threading.Event, history: coll
             last_stamp = stamp
 
             entry = (data, stamp)
+            print(entry)
             history.append(entry)
             data_ready.set()
     finally:
