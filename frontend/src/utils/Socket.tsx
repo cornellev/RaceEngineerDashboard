@@ -28,6 +28,7 @@ class SocketService {
 
     this.socket.onmessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data);
+      this.data = [...this.data.slice(-2000), data];
       this.handlers.forEach((handler) => handler(data));
     };
 
@@ -46,6 +47,14 @@ class SocketService {
     this.handlers.add(handler);
     // Return unsubscribe function
     return () => this.handlers.delete(handler);
+  }
+
+  public getData(): number[] {
+    return this.data;
+  }
+
+  public getLatestData(): number | null {
+    return this.data.length > 0 ? this.data[this.data.length - 1] : null;
   }
 
   public send(data: any): void {

@@ -45,9 +45,10 @@ function App() {
   return (
     <>
       <Header setPage={setPage} setSideBar={setSideBar} sideBar={sideBar} />
+      <div className="w-full h-[10vh] mx-auto px-4 sm:px-6 lg:px-8" />
       <SideBar open={sideBar} />
       <main
-        className={`${sideBar ? "w-[80%]" : "w-full"} h-full transition-all duration-300 ease-in-out ml-0 mt-20`}
+        className={`${sideBar ? "w-[80%]" : "w-full"} h-full transition-all duration-300 ease-in-out ml-0`}
       >
         {getPageComponent()}
       </main>
