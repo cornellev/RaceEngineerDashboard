@@ -2,4 +2,4 @@ fastapi
 uvicorn[standard]
 websockets
 asyncio
-serial
+pyserial
