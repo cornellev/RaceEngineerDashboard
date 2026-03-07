@@ -23,7 +23,7 @@ export default function SideBar({ open }: { open: boolean }) {
       }
 
       const result = await response.json();
-      setResponse(result.message);
+      setResponse((prev) => prev + "\n" + result.verdict);
       console.log("Success:", result);
     } catch (error) {
       console.error("Error:", error);
@@ -83,7 +83,7 @@ export default function SideBar({ open }: { open: boolean }) {
           <p>Auto</p>
         </div>
       </div>
-      <p>{response}</p>
+      <p className="text-wrap">{response}</p>
       {manual ? (
         button ? (
           <Button

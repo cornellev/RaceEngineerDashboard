@@ -1,4 +1,38 @@
 type MessageHandler = (data: any) => void;
+export interface SocketData {
+  seq: number;
+  global_ts: number;
+  power: {
+    ts: number;
+    current: number;
+    voltage: number;
+  };
+  steering: {
+    ts: number;
+    brake_pressure: number;
+    turn_angle: number;
+  };
+  rpm_front: {
+    ts: number;
+    rpm_left: number;
+    rpm_right: number;
+  };
+  rpm_back: {
+    ts: number;
+    rpm_left: number;
+    rpm_right: number;
+  };
+  gps: {
+    ts: number;
+    lat: number;
+    long: number;
+  };
+  motor: {
+    ts: number;
+    rpm: number;
+    throttle: number;
+  };
+}
 
 class SocketService {
   private static instance: SocketService;
@@ -6,7 +40,7 @@ class SocketService {
   private url: string = `ws://127.0.0.1:8000/ws/stream`; // Replace with env variable URL
   private handlers: Set<MessageHandler> = new Set();
   private reconnectInterval: number = 5000;
-  private data: number[] = [];
+  private data: SocketData[] = [];
 
   private constructor() {}
 
@@ -49,11 +83,11 @@ class SocketService {
     return () => this.handlers.delete(handler);
   }
 
-  public getData(): number[] {
+  public getData(): SocketData[] {
     return this.data;
   }
 
-  public getLatestData(): number | null {
+  public getLatestData(): SocketData | null {
     return this.data.length > 0 ? this.data[this.data.length - 1] : null;
   }
 

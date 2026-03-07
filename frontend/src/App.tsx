@@ -6,6 +6,7 @@ import SideBar from "./components/SideBar";
 import Chart from "./components/Chart";
 
 import socket from "./utils/Socket";
+import type { SocketData } from "./utils/Socket";
 
 import { useState, useEffect } from "react";
 
@@ -13,6 +14,8 @@ function App() {
   const [page, setPage] = useState("dummy");
   const [sideBar, setSideBar] = useState(false);
   const [messages, setMessages] = useState("");
+
+  const [data, setData] = useState<SocketData[]>([]);
 
   const getPageComponent = () => {
     switch (page) {
@@ -26,7 +29,14 @@ function App() {
         return (
           <>
             <p className="text-white">JSON: {messages}</p>
-            <Chart />
+            <Chart
+              title="Voltage Data"
+              data={data.map((d) => d.power.voltage)}
+            />
+            <Chart
+              title="Current Data"
+              data={data.map((d) => d.power.current)}
+            />
           </>
         );
     }
@@ -36,6 +46,7 @@ function App() {
 
     const unsubscribe = socket.subscribe((data) => {
       console.log("Received data from backend:", JSON.stringify(data));
+      setData(socket.getData());
       setMessages(JSON.stringify(data));
     });
 

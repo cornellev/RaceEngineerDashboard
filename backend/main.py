@@ -147,20 +147,17 @@ def root():
 racegpt_lock = asyncio.Lock()
 
 @app.post("/racegpt")
-async def racegpt(data: dict = Body(...)):
+async def racegpt(data: dict):
     async with racegpt_lock:
-        await asyncio.to_thread(racegpt_module.send_serial_data, data)
         try:
             response = await asyncio.wait_for(
-                asyncio.to_thread(racegpt_module.receive_serial_data),
-                timeout=5.0,  # adjust as needed
+                racegpt_module.get_response(data),
+                timeout=20
             )
         except asyncio.TimeoutError:
-            response = None
+            raise HTTPException(status_code=504, detail="RaceGPT device did not respond")
 
-    if response is None:
-        raise HTTPException(status_code=504, detail="RaceGPT device did not respond")
-    return {"message": "Hello from RaceGPT!", "data": response}
+    return response
 
 @app.websocket("/ws/stream")
 async def websocket_stream(websocket: WebSocket):
