@@ -19,8 +19,13 @@
 
 ## Getting Started
 
-Create a `.env` file in the in the root directory (not under `/backend` or `/frontend`).
-See `.env.example` for more info.
+**Create a `.env` file in the the root directory (not under `/backend` or `/frontend`).
+See `.env.example` for more info.**
+
+**Google Maps**: To get location data and Google Maps properly displaying,
+create a `.env` file in the `/frontend` directory. Follow the `.env.example` in the
+`/frontend` and create the environment variable VITE_GOOGLE_MAPS_API_KEY with your
+Google Maps API Key and a VITE_GOOGLE_MAP_ID with a Map ID from Google Cloud console.
 
 Make sure Docker containers and volumes for this project are not running already.
 Then, run `docker compose up --build` to get all containers running.

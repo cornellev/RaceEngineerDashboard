@@ -6,18 +6,17 @@ This project uses Bun. Run the following command in the frontend directory
 to start a dev environment.
 
 ```
-bun dev
+bun run dev
 ```
 
-To build and run the frontend UI as a Docker container. Run the following two
-commands in the frontend directory.
+Make sure to specify a `VITE_GOOGLE_MAPS_API_KEY` and a
+`VITE_GOOGLE_MAP_ID` in a newly created `.env` file. Follow the
+format in the .env.example for the frontend.
 
-```
-docker build -t frontend .
-docker run -d -p 3000:3000 --name frontend frontend
-```
-
-The container should be running in the background locally on port 3000
+As a note, the top level `docker compose up` works fine without
+the frontend `.env` file, just follow the instructions in the top
+level README. This frontend instruction is just for development
+of the frontend UI in isolation from the backend.
 
 ## Design
 

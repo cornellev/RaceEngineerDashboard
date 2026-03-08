@@ -4,6 +4,7 @@ import Data from "./pages/Data";
 import RaceGPT from "./pages/RaceGPT";
 import SideBar from "./components/SideBar";
 import Chart from "./components/Chart";
+import MapComponent from "./components/MapComponent";
 
 import socket from "./utils/Socket";
 import type { SocketData } from "./utils/Socket";
@@ -29,6 +30,12 @@ function App() {
         return (
           <>
             <p className="text-white">JSON: {messages}</p>
+            <MapComponent
+              latitude={data.length > 0 ? data[data.length - 1].gps.lat : null}
+              longitude={
+                data.length > 0 ? data[data.length - 1].gps.long : null
+              }
+            />
             <Chart
               title="Voltage Data"
               data={data.map((d) => d.power.voltage)}
@@ -36,6 +43,35 @@ function App() {
             <Chart
               title="Current Data"
               data={data.map((d) => d.power.current)}
+            />
+            <Chart
+              title="Brake Pressure Data"
+              data={data.map((d) => d.steering.brake_pressure)}
+            />
+            <Chart
+              title="Turn Angle Data"
+              data={data.map((d) => d.steering.turn_angle)}
+            />
+            <Chart
+              title="RPM Front Left Data"
+              data={data.map((d) => d.rpm_front.rpm_left)}
+            />
+            <Chart
+              title="RPM Front Right Data"
+              data={data.map((d) => d.rpm_front.rpm_right)}
+            />
+            <Chart
+              title="RPM Back Left Data"
+              data={data.map((d) => d.rpm_back.rpm_left)}
+            />
+            <Chart
+              title="RPM Back Right Data"
+              data={data.map((d) => d.rpm_back.rpm_right)}
+            />
+            <Chart title="Motor RPM Data" data={data.map((d) => d.motor.rpm)} />
+            <Chart
+              title="Motor Throttle Data"
+              data={data.map((d) => d.motor.throttle)}
             />
           </>
         );
@@ -56,10 +92,10 @@ function App() {
   return (
     <>
       <Header setPage={setPage} setSideBar={setSideBar} sideBar={sideBar} />
-      <div className="w-full h-[10vh] mx-auto px-4 sm:px-6 lg:px-8" />
+      <div className="w-screen h-[10vh] mx-auto px-4 sm:px-6 lg:px-8" />
       <SideBar open={sideBar} />
       <main
-        className={`${sideBar ? "w-[80%]" : "w-full"} h-full transition-all duration-300 ease-in-out ml-0`}
+        className={`${sideBar ? "w-[80%]" : "w-screen"} h-full transition-all duration-300 ease-in-out m-0 p-0`}
       >
         {getPageComponent()}
       </main>
