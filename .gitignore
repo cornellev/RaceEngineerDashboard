@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-frontend/node_modules
-.env
-=======
+frontend/node_modules/
+frontend/.env
 .env
 .env*.local
->>>>>>> c23a7a43eee3935c646a3b18f831e430f42ff06e
