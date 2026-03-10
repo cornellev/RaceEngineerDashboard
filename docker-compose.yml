@@ -29,7 +29,7 @@ services:
       - ROS_DOMAIN_ID=14
       - ROS_LOCALHOST_ONLY=0
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
-      - ROS_DISCOVERY_SERVER=100.89.29.99:11811
+      - DISCOVERY_SERVER_IP=100.89.29.99
     depends_on:
       - tailscale
     network_mode: service:tailscale
