@@ -20,7 +20,7 @@
                                 <metatrafficUnicastLocatorList>
                                     <locator>
                                         <udpv4>
-                                            <address>ROS_DISCOVERY_SERVER</address>
+                                            <address>DISCOVERY_SERVER_IP</address>
                                             <port>11811</port>
                                         </udpv4>
                                     </locator>
