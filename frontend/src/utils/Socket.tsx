@@ -61,7 +61,8 @@ class SocketService {
     };
 
     this.socket.onmessage = (event: MessageEvent) => {
-      const data = JSON.parse(event.data);
+      const envelope = JSON.parse(event.data);
+      const data = envelope.data;
       this.data = [...this.data.slice(-2000), data];
       this.handlers.forEach((handler) => handler(data));
     };
