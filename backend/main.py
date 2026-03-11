@@ -2,6 +2,7 @@ import asyncio
 import threading
 import contextlib
 import collections
+import time
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import rclpy
@@ -30,27 +31,41 @@ def ros_spin_loop(node: DataSubscriber, stop_evt: threading.Event, history: coll
     ex = SingleThreadedExecutor()
     ex.add_node(node)
     last_stamp = None
+    last_data_time = time.monotonic()
+    DATA_TIMEOUT_SEC = 5.0
+    warned = False
     try:
         i = 0
         while rclpy.ok() and not stop_evt.is_set():
-            ex.spin_once(timeout_sec=0.1)
+            try:
+                ex.spin_once(timeout_sec=0.1)
+            except Exception as e:
+                print(f"[ROS] ERROR: exception during spin: {e}", flush=True)
             i += 1
             if i % 50 == 0:
                 print("[ROS] spinning...")
 
             data, stamp = node.get_latest()
             if data is None or stamp is None:
+                if not warned and time.monotonic() - last_data_time > DATA_TIMEOUT_SEC:
+                    print(f"[ROS] WARN: no data received for >{DATA_TIMEOUT_SEC}s", flush=True)
+                    warned = True
                 continue
+
+            last_data_time = time.monotonic()
+            warned = False
 
             if last_stamp is not None and stamp <= last_stamp:
                 continue
             last_stamp = stamp
 
-            entry = (data, stamp)
-            history.append(entry)
+            history.append((data, stamp))
             data_ready.set()
+    except Exception as e:
+        print(f"[ROS] ERROR: exception in spin loop: {e}", flush=True)
     finally:
         ex.remove_node(node)
+        print("[ROS] spin loop exited", flush=True)
 
 # broadcasts new messages to all clients without re-collecting ROS message per client
 # use a single producer to wait for next snapshot and then broadcast to all active sockets
@@ -92,10 +107,19 @@ async def broadcaster(app: FastAPI):
 # need to run ROS and FastAPI concurrently; ROS doesn't block FastAPI's event loop               
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    rclpy.init()
+    try:
+        rclpy.init()
+        print("[ROS] rclpy initialized", flush=True)
+    except Exception as e:
+        print(f"[ROS] ERROR: failed to initialize rclpy: {e}", flush=True)
+        raise
 
     topic = "spi_data"
-    app.state.node = DataSubscriber(topic)
+    try:
+        app.state.node = DataSubscriber(topic)
+    except Exception as e:
+        print(f"[ROS] ERROR: failed to create subscriber for '{topic}': {e}", flush=True)
+        raise
 
     # create stop signal before starting ROS thread
     app.state.stop_evt = threading.Event()
