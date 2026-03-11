@@ -10,6 +10,13 @@ services:
       - TS_USERSPACE=false
       - TS_AUTH_ONCE=true
       - TS_EXTRA_ARGS=--advertise-tags=tag:ros-device --ssh=true
+      - TS_ENABLE_HEALTH_CHECK=true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9002/healthz"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
     volumes:
       - ts-authkey-container:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
@@ -29,7 +36,8 @@ services:
       - ROS_LOCALHOST_ONLY=0
       - DISCOVERY_SERVER_IP=100.110.98.26
     depends_on:
-      - tailscale
+      tailscale:
+        condition: service_healthy
     network_mode: service:tailscale
 
   frontend:
