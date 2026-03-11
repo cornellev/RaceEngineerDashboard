@@ -34,3 +34,17 @@ The frontend client UI should be running on port 3000 along with a backend
 healthcheck endpoint on the root of port 8000.
 
 Integration with RaceGPT is done via serial connection.
+
+# ros subscriber
+
+For the ROS2 subscriber, first get the ROS2 publisher IP address from:
+
+```sh
+ssh cev@<daq tailscale ip> "docker exec ts-authkey-container tailscale ip" | head -n1)
+```
+
+Make sure this matches the ip in the `docker-compose.yml` file.
+
+We set it manually, not via env var, because the publisher IP should not change.
+
+

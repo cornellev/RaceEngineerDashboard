@@ -10,7 +10,6 @@ services:
       - TS_USERSPACE=false
       - TS_AUTH_ONCE=true
       - TS_EXTRA_ARGS=--advertise-tags=tag:ros-device --ssh=true
-      - TAILSCALE_TAG_NAME=tag:ros-device
     volumes:
       - ts-authkey-container:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
@@ -28,8 +27,7 @@ services:
     environment:
       - ROS_DOMAIN_ID=14
       - ROS_LOCALHOST_ONLY=0
-      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
-      - DISCOVERY_SERVER_IP=100.89.29.99
+      - DISCOVERY_SERVER_IP=100.110.98.26
     depends_on:
       - tailscale
     network_mode: service:tailscale
