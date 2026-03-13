@@ -11,6 +11,7 @@ from subscriber import DataSubscriber
 from contextlib import asynccontextmanager
 import math
 import racegpt as racegpt_module
+from rosbag_api import router as rosbag_router
 
 DEQUE_SIZE = 1000 # for snapshot
 
@@ -162,6 +163,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(rosbag_router)
 
 @app.get("/")
 def root():
