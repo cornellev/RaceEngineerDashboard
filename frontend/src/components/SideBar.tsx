@@ -71,7 +71,7 @@ export default function SideBar({ open }: { open: boolean }) {
 
   return (
     <div
-      className={`min-w-64 h-full m-0 bg-[#232526] text-gray-400 p-6 pt-12 fixed top-0 ${open ? "right-0" : "right-[min(-20%,calc(var(--spacing)*(-72)))]"} z-99 transition-all duration-300 ease-in-out shadow-[-10px_0px_15px_-3px_rgba(0,0,0,0.1)] flex flex-col items-center justify-between`}
+      className={`min-w-64 h-full m-0 bg-[#232526] text-gray-200 p-6 pt-12 fixed top-0 ${open ? "right-0" : "right-[min(-20%,calc(var(--spacing)*(-72)))]"} z-99 transition-all duration-300 ease-in-out shadow-[-10px_0px_15px_-3px_rgba(0,0,0,0.1)] flex flex-col items-center justify-between`}
     >
       <div className="flex justify-center flex-col">
         <h2 className="text-lg text-center font-bold mt-[25%]">

@@ -187,9 +187,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           </div>
         </DashboardCard>
 
-        <DashboardCard
-          className="min-h-[170px] lg:col-span-4 lg:row-start-1"
-        >
+        <DashboardCard className="min-h-[170px] lg:col-span-4 lg:row-start-1">
           <MapComponent
             latitude={latest?.gps.lat ?? null}
             longitude={latest?.gps.long ?? null}
@@ -269,7 +267,7 @@ function DashboardCard({
 }) {
   return (
     <section
-      className={`flex min-h-0 flex-col overflow-hidden rounded-[1.25rem] border border-white/8 bg-[linear-gradient(180deg,rgba(16,22,28,0.96),rgba(8,12,16,0.98))] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] ${className}`}
+      className={`flex min-h-0 flex-col overflow-hidden rounded-[1.25rem] border border-white/8 bg-[linear-gradient(180deg,rgba(32,44,56,0.96),rgba(16,24,32,0.98))] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] ${className}`}
     >
       {title ? (
         <div className="mb-2 flex items-center justify-between text-left">
