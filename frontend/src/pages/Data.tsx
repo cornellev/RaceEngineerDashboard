@@ -1,9 +1,10 @@
 import InteractiveGrid from "../layouts/InteractiveGrid";
+import type { SocketData } from "../utils/Socket";
 
-export default function Data() {
+export default function Data({ data }: { data: SocketData[] }) {
   return (
-    <section className="w-full h-[90vh] flex flex-col items-center justify-center bg-linear-to-b">
-      <InteractiveGrid />
+    <section className="h-[calc(100vh-10vh)] w-full overflow-hidden bg-[#0b1015] px-3 py-3 sm:px-4 lg:px-5">
+      <InteractiveGrid data={data} />
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import MapComponent from "../components/MapComponent";
 import socket from "../utils/Socket";
+import type { SocketData } from "../utils/Socket";
 
 export default function Map() {
   const [[latitude, longitude], setLatLong] = useState([
@@ -8,7 +9,7 @@ export default function Map() {
   ]);
 
   useEffect(() => {
-    const updateLatLong = (data: any) => {
+    const updateLatLong = (data: SocketData) => {
       setLatLong([data.gps.lat, data.gps.long]);
     };
 

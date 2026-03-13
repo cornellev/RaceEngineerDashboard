@@ -43,7 +43,7 @@ export default function SideBar({ open }: { open: boolean }) {
     setManual((prev) => !prev);
 
     if (manual) {
-      let id = setInterval(() => {
+      const id = setInterval(() => {
         getResponse();
       }, frequency * 1000);
       setIntervalID(id);

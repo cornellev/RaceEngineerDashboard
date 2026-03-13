@@ -1,26 +1,58 @@
 import { APIProvider, Map, AdvancedMarker } from "@vis.gl/react-google-maps";
+import mapImage from "../assets/map.jpg";
 
 const MapComponent = ({
   latitude,
   longitude,
+  interactive = false,
+  className = "",
 }: {
   latitude: number | null;
   longitude: number | null;
+  interactive?: boolean;
+  className?: string;
 }) => {
   const position = {
     lat: latitude || 42.44666485723302,
     lng: longitude || -76.4608710371343,
   };
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const mapId = import.meta.env.VITE_GOOGLE_MAP_ID || "DEMO_MAP_ID";
+
+  if (!apiKey) {
+    return (
+      <div
+        className={`relative h-full w-full overflow-hidden rounded-[1.1rem] ${className}`}
+      >
+        <img
+          src={mapImage}
+          alt="Track map fallback"
+          className="h-full w-full object-cover opacity-80"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,12,17,0.08),rgba(8,12,17,0.45))]" />
+        <div className="absolute bottom-4 left-4 rounded-full bg-black/60 px-3 py-1 text-sm text-white">
+          {position.lat.toFixed(5)}, {position.lng.toFixed(5)}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "0"}>
-      <div style={{ height: "400px", width: "100%" }}>
+    <APIProvider apiKey={apiKey}>
+      <div
+        className={`h-full w-full overflow-hidden rounded-[1.1rem] ${className}`}
+      >
         <Map
-          defaultCenter={position}
-          defaultZoom={13}
-          gestureHandling={"greedy"}
-          disableDefaultUI={false}
-          mapId={import.meta.env.VITE_GOOGLE_MAP_ID || "DEMO_MAP_ID"}
+          center={position}
+          defaultZoom={15}
+          gestureHandling={interactive ? "greedy" : "none"}
+          disableDefaultUI={!interactive}
+          keyboardShortcuts={interactive}
+          zoomControl={interactive}
+          streetViewControl={interactive}
+          mapTypeControl={interactive}
+          fullscreenControl={interactive}
+          mapId={mapId}
         >
           <AdvancedMarker position={position} />
         </Map>
