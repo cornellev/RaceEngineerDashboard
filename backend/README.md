@@ -39,6 +39,10 @@ ROS 2 topic (spi_data)  →  DataSubscriber  →  History (deque)  →  Broadcas
 ## API
 
 - `GET /` — Health check. Returns `{"message": "Race Telemetry API", "status": "running"}`
+- `POST /bag/start` — Proxy to remote rosbag service (via Tailscale)
+- `POST /bag/stop` — Proxy to remote rosbag service (via Tailscale)
+- `GET /bag/status` — Proxy to remote rosbag service (via Tailscale)
+- `GET /healthz` — Proxy to remote rosbag service (via Tailscale)
 - `WS /ws/stream` — WebSocket stream. Clients receive JSON: `{"seq": int, "data": {...}, "stamp_ns": int}`
 - `POST /racegpt` — RaceGPT serial communication endpoint
 
@@ -48,3 +52,4 @@ ROS 2 topic (spi_data)  →  DataSubscriber  →  History (deque)  →  Broadcas
 - `ROS_LOCALHOST_ONLY` (default: 0) — Allow non-localhost ROS discovery
 - `RMW_IMPLEMENTATION` — Set to `rmw_fastrtps_cpp` for FastDDS (must match publisher)
 - `ROS_DISCOVERY_SERVER` — Publisher's Tailscale IP and port (e.g. `100.73.23.79:11811`) for cross-network discovery; required when publisher is on a different machine
+- `TAILSCALE_IP` — Tailscale IP for the remote rosbag API (expects port 8080)

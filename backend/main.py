@@ -3,7 +3,8 @@ import threading
 import contextlib
 import collections
 import time
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body, HTTPException
+import os
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
@@ -11,7 +12,7 @@ from subscriber import DataSubscriber
 from contextlib import asynccontextmanager
 import math
 import racegpt as racegpt_module
-from rosbag_api import router as rosbag_router
+import httpx
 
 DEQUE_SIZE = 1000 # for snapshot
 
@@ -94,7 +95,7 @@ async def broadcaster(app: FastAPI):
         dead = []
         for ws in list(app.state.clients):
             try:
-                print(payload)
+                # print(payload)
                 await ws.send_json(payload)
             except WebSocketDisconnect:
                 dead.append(ws)
@@ -164,12 +165,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(rosbag_router)
-
 @app.get("/")
 def root():
     """Health check endpoint."""
     return {"message": "Race Telemetry API", "status": "running"}
+
+def get_remote_bag_base_url() -> str:
+    tailscale_ip = os.getenv("TAILSCALE_IP")
+    return f"http://{tailscale_ip}:8080"
+
+async def forward_bag_request(method: str, path: str) -> Response:
+    url = f"{get_remote_bag_base_url()}{path}"
+    timeout = httpx.Timeout(5.0, connect=2.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        remote_response = await client.request(method, url)
+    content_type = remote_response.headers.get("content-type", "application/json")
+    return Response(
+        content=remote_response.content,
+        status_code=remote_response.status_code,
+        media_type=content_type,
+    )
 
 racegpt_lock = asyncio.Lock()
 
@@ -185,6 +200,28 @@ async def racegpt(data: dict):
             raise HTTPException(status_code=504, detail="RaceGPT device did not respond")
 
     return response
+
+@app.post("/bag/start")
+async def bag_start():
+    return await forward_bag_request("POST", "/bag/start")
+
+@app.post("/bag/stop")
+async def bag_stop():
+    return await forward_bag_request("POST", "/bag/stop")
+
+@app.get("/bag/status")
+async def bag_status():
+    return await forward_bag_request("GET", "/bag/status")
+
+@app.get("/healthz")
+async def healthz():
+    # forward request if good, otherwise report "unreachable"
+    try:
+        bag_response = await forward_bag_request("GET", "/healthz")
+        bag_status = "ok" if bag_response.status_code == 200 else "error"
+    except Exception:
+        bag_status = "unreachable"
+    return {"local": "ok", "bag_service": bag_status}
 
 @app.websocket("/ws/stream")
 async def websocket_stream(websocket: WebSocket):
