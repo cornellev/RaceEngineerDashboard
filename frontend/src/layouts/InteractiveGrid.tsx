@@ -86,24 +86,43 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
     };
   }, [data, runSession.startTimestamp]);
 
-  const toggleRunTracking = () => {
+  const toggleRunTracking = async () => {
     if (latestTimestamp === null) {
       return;
     }
 
-    setRunSession((previous) => {
-      if (previous.isRunning) {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/bag/${runSession.isRunning ? "stop" : "start"}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+
+      setRunSession((previous) => {
+        if (previous.isRunning) {
+          return {
+            startTimestamp: null,
+            isRunning: false,
+          };
+        }
+
         return {
-          startTimestamp: null,
-          isRunning: false,
+          startTimestamp: latestTimestamp,
+          isRunning: true,
         };
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok for ROS bag endpoint");
       }
 
-      return {
-        startTimestamp: latestTimestamp,
-        isRunning: true,
-      };
-    });
+      const result = await response.json();
+      console.log("Success:", result);
+    } catch (error) {
+      console.error("Error occurred while fetching data:", error);
+    }
   };
 
   return (
@@ -172,6 +191,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               <div className="text-xs uppercase tracking-[0.2em] text-white/48">
                 {formatValue(latestPowerKw, 2)} kW
               </div>
+              <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
+                {formatValue(latestTimestamp, 1)}
+              </strong>
               <button
                 type="button"
                 className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition ${
