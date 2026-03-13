@@ -171,7 +171,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               <MetricPanel
                 label="Instantaneous"
                 value={formatEfficiency(instantEfficiency)}
-                helper="mph/kW"
+                helper="mi/kWh"
               />
               <MetricPanel
                 label="Recording efficiency"
