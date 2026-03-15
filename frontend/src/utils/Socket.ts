@@ -70,18 +70,21 @@ const toTimestampMs = (value: unknown): number | null => {
     return null;
   }
 
-  if (numericValue > 1_000_000_000_000_000) {
-    return numericValue / 1_000_000;
+  if (numericValue > 10e12) {
+    return numericValue / 1e6;
   }
 
-  if (numericValue > 1_000_000_000_000) {
-    return numericValue / 1_000;
+  if (numericValue > 1e12) {
+    return numericValue / 1e3;
   }
 
   return numericValue;
 };
 
-const normalizeData = (payload: unknown, envelope?: LooseRecord): SocketData => {
+const normalizeData = (
+  payload: unknown,
+  envelope?: LooseRecord,
+): SocketData => {
   const root = asRecord(payload);
   const power = asRecord(root.power);
   const steering = asRecord(root.steering);
@@ -93,11 +96,7 @@ const normalizeData = (payload: unknown, envelope?: LooseRecord): SocketData => 
   const rpmBack = asRecord(root.rpm_back);
 
   const speedValue =
-    gps.speed ??
-    motor.velocity ??
-    motor.speed ??
-    filtered.speed ??
-    root.speed;
+    gps.speed ?? motor.velocity ?? motor.speed ?? filtered.speed ?? root.speed;
 
   const timestampCandidates = [
     root.global_ts,
@@ -190,7 +189,7 @@ class SocketService {
     };
 
     this.socket.onmessage = (event: MessageEvent) => {
-      const envelope = JSON.parse(event.data);
+      const envelope = JSON.parse(event.data.data);
       const data = normalizeData(envelope.data ?? envelope, asRecord(envelope));
       this.data = [...this.data.slice(-2000), data];
       this.handlers.forEach((handler) => handler(data));
@@ -211,11 +210,12 @@ class SocketService {
   private resetDataTimeout(): void {
     if (this.dataTimeoutHandle) clearTimeout(this.dataTimeoutHandle);
     this.dataTimeoutHandle = setTimeout(() => {
-        console.warn(`[ROS] Error: no data received for >${this.DATA_TIMEOUT_MS / 1000}s. possible reasons:` + 
-            `\n- ros publisher is not publishing` + 
-            `\n- tailscale connection is not working properly` +
-            `\n- you are not using the correct fastdds discovery server ip address`
-        );
+      console.warn(
+        `[ROS] Error: no data received for >${this.DATA_TIMEOUT_MS / 1000}s. possible reasons:` +
+          `\n- ros publisher is not publishing` +
+          `\n- tailscale connection is not working properly` +
+          `\n- you are not using the correct fastdds discovery server ip address`,
+      );
     }, this.DATA_TIMEOUT_MS);
   }
 

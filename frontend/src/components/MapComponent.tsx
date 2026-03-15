@@ -4,7 +4,7 @@ import mapImage from "../assets/map.jpg";
 const MapComponent = ({
   latitude,
   longitude,
-  interactive = false,
+  interactive = true,
   className = "",
 }: {
   latitude: number | null;
@@ -44,7 +44,7 @@ const MapComponent = ({
       >
         <Map
           center={position}
-          defaultZoom={15}
+          defaultZoom={20}
           gestureHandling={interactive ? "greedy" : "none"}
           disableDefaultUI={!interactive}
           keyboardShortcuts={interactive}
