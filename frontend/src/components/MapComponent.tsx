@@ -43,7 +43,7 @@ const MapComponent = ({
         className={`h-full w-full overflow-hidden rounded-[1.1rem] ${className}`}
       >
         <Map
-          center={position}
+          center={{ lat: 42.44638739192644, lng: -76.463079723162 }}
           defaultZoom={18}
           gestureHandling={interactive ? "greedy" : "none"}
           disableDefaultUI={!interactive}
@@ -52,9 +52,19 @@ const MapComponent = ({
           streetViewControl={false}
           mapTypeControl={false}
           fullscreenControl={false}
+          defaultHeading={90}
+          options={{ heading: 90, mapId: mapId }}
           mapId={mapId}
         >
-          <AdvancedMarker position={position} />
+          <AdvancedMarker position={position}>
+            <div className="relative">
+              {/* glow */}
+              <div className="absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-400 opacity-40 blur-sm"></div>
+
+              {/* core dot */}
+              <div className="h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500 border-2 border-white"></div>
+            </div>
+          </AdvancedMarker>
         </Map>
       </div>
     </APIProvider>

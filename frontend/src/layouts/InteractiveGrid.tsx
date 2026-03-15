@@ -193,7 +193,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 {formatValue(latestPowerKw, 2)} kW
               </div>
               <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
-                {formatValue(latestTimestamp, 1)}
+                {formatValue(latestTimestamp / 10e5, 1)}
               </strong>
               <button
                 type="button"
@@ -414,6 +414,7 @@ function CompactChart({
             fillOpacity: 0.2,
           },
         }}
+        skipAnimation
       />
     </div>
   );
@@ -457,7 +458,7 @@ function calculateEfficiency(sample: SocketData): number | null {
 }
 
 function formatElapsed(startTs: number, currentTs: number): string {
-  const elapsedSeconds = Math.max(0, (currentTs - startTs) / 1000000);
+  const elapsedSeconds = Math.max(0, (currentTs - startTs) / 1e5);
 
   if (elapsedSeconds < 60) {
     return `${Math.round(elapsedSeconds)}s`;

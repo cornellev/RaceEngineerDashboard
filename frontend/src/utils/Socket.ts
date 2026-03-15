@@ -189,7 +189,7 @@ class SocketService {
     };
 
     this.socket.onmessage = (event: MessageEvent) => {
-      const envelope = JSON.parse(event.data.data);
+      const envelope = JSON.parse(event.data);
       const data = normalizeData(envelope.data ?? envelope, asRecord(envelope));
       this.data = [...this.data.slice(-2000), data];
       this.handlers.forEach((handler) => handler(data));
