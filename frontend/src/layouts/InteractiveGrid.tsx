@@ -87,7 +87,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   }, [data, runSession.startTimestamp]);
 
   const toggleRunTracking = async () => {
-    if (latestTimestamp === null) {
+    if (latestTimestamp === null && !runSession.isRunning) {
       console.warn("Cannot start run tracking without any telemetry data");
       return;
     }
@@ -157,7 +157,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 MPH
               </span>
               <span className="mt-4 text-xs text-white/45">
-                Filtered {formatValue(latest?.filtered.speed ?? 0, 1)}
+                RPM {formatValue(latest?.filtered.speed ?? 0, 1)}
               </span>
             </div>
           </div>
@@ -193,7 +193,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 {formatValue(latestPowerKw, 2)} kW
               </div>
               <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
-                {formatValue(latestTimestamp / 10e5, 1)}
+                {`${Math.floor(latestTimestamp / 10e5 / 60)} : ${formatValue((latestTimestamp / 10e5) % 60, 1)}`}
               </strong>
               <button
                 type="button"
