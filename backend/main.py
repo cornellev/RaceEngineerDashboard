@@ -15,6 +15,7 @@ import racegpt as racegpt_module
 import httpx
 
 DEQUE_SIZE = 1000 # for snapshot
+SAMPLE_RATE_HZ = 20  # rate at which we send data to frontend
 
 def sanitize_json(x):
     if isinstance(x, float):
@@ -34,6 +35,8 @@ def ros_spin_loop(node: DataSubscriber, stop_evt: threading.Event, history: coll
     ex.add_node(node)
     last_stamp = None
     last_data_time = time.monotonic()
+    last_append_time = 0.0
+    sample_interval = 1.0 / SAMPLE_RATE_HZ
     DATA_TIMEOUT_SEC = 5.0
     warned = False
     try:
@@ -60,6 +63,12 @@ def ros_spin_loop(node: DataSubscriber, stop_evt: threading.Event, history: coll
             if last_stamp is not None and stamp <= last_stamp:
                 continue
             last_stamp = stamp
+
+            # Rate limit: only append/broadcast at SAMPLE_RATE_HZ
+            now = time.monotonic()
+            if now - last_append_time < sample_interval:
+                continue
+            last_append_time = now
 
             history.append((data, stamp))
             data_ready.set()
