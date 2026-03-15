@@ -7,7 +7,7 @@ export default function Header(props: {
 }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-100 bg-linear-to-r from-[#232526] to-[#252628] shadow-[0_4px_16px_rgba(239,68,60,0.1)] border-b-white/8">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-9xl mx-auto px-6 py-3 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-3">
           <img src={logo} alt="Race Engineer Dashboard" className="w-10 h-10" />
@@ -31,13 +31,6 @@ export default function Header(props: {
             onClick={() => props.setPage("data")}
           >
             Data
-          </a>
-          <a
-            href="#map"
-            className="transition-colors duration-200 font-medium"
-            onClick={() => props.setPage("home")}
-          >
-            Map
           </a>
           {/* Hamburger Menu */}
           <label className="swap swap-rotate group">

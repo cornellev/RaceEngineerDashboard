@@ -127,10 +127,10 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   };
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-400 flex-col text-white">
+    <div className="mx-0 my-auto flex h-full w-full flex-col text-white">
       <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(0,0.9fr)_minmax(0,1fr)]">
         <DashboardCard
-          className="min-h-42.5 lg:col-span-4 lg:row-start-1"
+          className="min-h-42.5 lg:col-span-3 lg:row-start-1"
           title="Speed"
         >
           <div className="flex h-full items-center justify-between gap-3">
@@ -164,7 +164,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         </DashboardCard>
 
         <DashboardCard
-          className="min-h-42.5 lg:col-span-4 lg:row-start-1"
+          className="min-h-42.5 lg:col-span-5 lg:row-start-1"
           title="Efficiency"
         >
           <div className="flex h-full flex-col justify-between gap-3">

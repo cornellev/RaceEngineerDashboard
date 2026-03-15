@@ -44,14 +44,14 @@ const MapComponent = ({
       >
         <Map
           center={position}
-          defaultZoom={20}
+          defaultZoom={18}
           gestureHandling={interactive ? "greedy" : "none"}
           disableDefaultUI={!interactive}
-          keyboardShortcuts={interactive}
+          keyboardShortcuts={false}
           zoomControl={interactive}
-          streetViewControl={interactive}
-          mapTypeControl={interactive}
-          fullscreenControl={interactive}
+          streetViewControl={false}
+          mapTypeControl={false}
+          fullscreenControl={false}
           mapId={mapId}
         >
           <AdvancedMarker position={position} />
