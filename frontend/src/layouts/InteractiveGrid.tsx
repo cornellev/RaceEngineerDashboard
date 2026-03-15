@@ -127,10 +127,10 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   };
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col text-white">
+    <div className="mx-auto flex h-full w-full max-w-400 flex-col text-white">
       <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(0,0.9fr)_minmax(0,1fr)]">
         <DashboardCard
-          className="min-h-[170px] lg:col-span-4 lg:row-start-1"
+          className="min-h-42.5 lg:col-span-4 lg:row-start-1"
           title="Speed"
         >
           <div className="flex h-full items-center justify-between gap-3">
@@ -164,7 +164,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         </DashboardCard>
 
         <DashboardCard
-          className="min-h-[170px] lg:col-span-4 lg:row-start-1"
+          className="min-h-42.5 lg:col-span-4 lg:row-start-1"
           title="Efficiency"
         >
           <div className="flex h-full flex-col justify-between gap-3">
@@ -210,7 +210,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           </div>
         </DashboardCard>
 
-        <DashboardCard className="min-h-[170px] lg:col-span-4 lg:row-start-1">
+        <DashboardCard className="min-h-42.5 lg:col-span-4 lg:row-start-1">
           <MapComponent
             latitude={latest?.gps.lat ?? null}
             longitude={latest?.gps.long ?? null}
@@ -219,7 +219,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         </DashboardCard>
 
         <DashboardCard
-          className="min-h-[220px] lg:col-span-5 lg:row-start-2"
+          className="min-h-55 lg:col-span-5 lg:row-start-2"
           title="Speed v. Time"
         >
           {history.length > 0 ? (
@@ -236,7 +236,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         </DashboardCard>
 
         <DashboardCard
-          className="min-h-[220px] lg:col-span-3 lg:row-start-2"
+          className="min-h-55 lg:col-span-3 lg:row-start-2"
           title="Signals"
         >
           <div className="grid h-full grid-cols-2 gap-2">
@@ -260,7 +260,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         </DashboardCard>
 
         <DashboardCard
-          className="min-h-[220px] lg:col-span-4 lg:row-start-2"
+          className="min-h-55 lg:col-span-4 lg:row-start-2"
           title="Power v. Time"
         >
           {history.length > 0 ? (
@@ -342,7 +342,7 @@ function SignalTile({ label, value }: { label: string; value: string }) {
 function EmptyTelemetryState({ compact = false }: { compact?: boolean }) {
   return (
     <div
-      className={`flex h-full items-center justify-center rounded-[1rem] border border-dashed border-white/12 bg-black/14 px-4 text-center text-sm text-white/52 ${compact ? "min-h-[140px]" : "min-h-[220px]"}`}
+      className={`flex h-full items-center justify-center rounded-2xl border border-dashed border-white/12 bg-black/14 px-4 text-center text-sm text-white/52 ${compact ? "min-h-35" : "min-h-55"}`}
     >
       Waiting for live ROS telemetry from the backend websocket.
     </div>
