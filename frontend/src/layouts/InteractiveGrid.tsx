@@ -10,7 +10,7 @@ import {
 import MapComponent from "../components/MapComponent";
 import type { SocketData } from "../utils/Socket";
 
-const HISTORY_LIMIT = 120;
+const HISTORY_LIMIT = 1200;
 const SPEEDOMETER_MAX_MPH = 90;
 
 const chartSx = {
@@ -40,7 +40,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   const history = useMemo(() => data.slice(-HISTORY_LIMIT), [data]);
   const latest = history[history.length - 1] ?? null;
   const latestTimestamp = latest?.global_ts ?? null;
-  const latestSpeed = latest?.gps.speed ?? 0;
+  const latestSpeed = latest?.filtered.speed ?? 0;
   const latestPowerKw = latest ? calculatePowerKilowatts(latest) : 0;
   const instantEfficiency = latest ? calculateEfficiency(latest) : null;
   const [runSession, setRunSession] = useState<RunSessionState>({
@@ -88,6 +88,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
   const toggleRunTracking = async () => {
     if (latestTimestamp === null) {
+      console.warn("Cannot start run tracking without any telemetry data");
       return;
     }
 
@@ -452,11 +453,11 @@ function calculateEfficiency(sample: SocketData): number | null {
     return null;
   }
 
-  return sample.gps.speed / powerKw;
+  return (sample.filtered.speed * 2.23694) / powerKw;
 }
 
 function formatElapsed(startTs: number, currentTs: number): string {
-  const elapsedSeconds = Math.max(0, (currentTs - startTs) / 1000);
+  const elapsedSeconds = Math.max(0, (currentTs - startTs) / 1000000);
 
   if (elapsedSeconds < 60) {
     return `${Math.round(elapsedSeconds)}s`;
