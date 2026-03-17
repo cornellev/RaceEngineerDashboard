@@ -1,3 +1,4 @@
+import { useState } from "react";
 import logo from "/logo.svg";
 
 export default function Header(props: {
@@ -21,7 +22,10 @@ export default function Header(props: {
           <a
             href="#racegpt"
             className="transition-colors duration-200 font-medium"
-            onClick={() => props.setPage("racegpt")}
+            onClick={() => {
+              props.setPage("racegpt");
+              props.setSideBar(!props.sideBar);
+            }}
           >
             RaceGPT
           </a>
@@ -37,6 +41,7 @@ export default function Header(props: {
             {/* this hidden checkbox controls the state */}
             <input
               type="checkbox"
+              checked={props.sideBar}
               onClick={() => {
                 props.setSideBar(!props.sideBar);
               }}

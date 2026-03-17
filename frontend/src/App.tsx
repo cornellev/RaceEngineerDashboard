@@ -21,7 +21,7 @@ function App() {
       case "data":
         return <Data data={data} />;
       case "racegpt":
-        return <RaceGPT />;
+        return <Data data={data} />;
       default:
         return <Data data={data} />;
     }
