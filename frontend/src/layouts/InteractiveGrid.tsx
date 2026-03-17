@@ -11,7 +11,7 @@ import MapComponent from "../components/MapComponent";
 import type { SocketData } from "../utils/Socket";
 
 const HISTORY_LIMIT = 1200;
-const SPEEDOMETER_MAX_MPH = 90;
+const SPEEDOMETER_MAX_MPH = 30;
 
 const chartSx = {
   ".MuiChartsAxis-root .MuiChartsAxis-line": {
@@ -225,10 +225,10 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           {history.length > 0 ? (
             <CompactChart
               accentColor="#fb923c"
-              currentValue={`${formatValue(latestSpeed, 1)} mph`}
-              data={speedHistory}
+              currentValue={`${formatValue(latestSpeed * 2.23694, 1)} mph`}
+              data={speedHistory.map((speed) => roundTo(speed * 2.23694, 1))}
               labels={xAxisLabels}
-              yMax={Math.max(90, Math.ceil(latestSpeed / 10) * 10)}
+              yMax={Math.max(90, Math.ceil((latestSpeed * 2.23694) / 10) * 10)}
             />
           ) : (
             <EmptyTelemetryState compact />
