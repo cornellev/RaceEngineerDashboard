@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { LineChart } from "@mui/x-charts";
 import {
@@ -12,14 +12,26 @@ import type { SocketData } from "../utils/Socket";
 
 const HISTORY_LIMIT = 1200;
 const SPEEDOMETER_MAX_MPH = 30;
+const TIMESTAMP_UNITS_PER_SECOND = 1e6;
+const HOURS_PER_SECOND = 1 / 3600;
+const METERS_PER_MILE = 1609.344;
+const WGS84_SEMI_MAJOR_AXIS = 6378137;
+const WGS84_FLATTENING = 1 / 298.257223563;
+const WGS84_ECCENTRICITY_SQUARED = WGS84_FLATTENING * (2 - WGS84_FLATTENING);
 
 const chartSx = {
   ".MuiChartsAxis-root .MuiChartsAxis-line": {
     stroke: "rgba(255,255,255,0.2)",
   },
+  ".MuiChartsAxis-root text": {
+    fill: "rgba(255,255,255,0.78)",
+  },
   ".MuiChartsAxis-tickLabel": {
     fill: "rgba(255,255,255,0.72)",
     fontSize: 11,
+  },
+  ".MuiChartsAxis-label": {
+    fill: "rgba(255,255,255,0.82)",
   },
   ".MuiChartsGrid-line": {
     stroke: "rgba(255,255,255,0.08)",
@@ -29,24 +41,54 @@ const chartSx = {
 type RunAverageState = {
   average: number | null;
   sampleCount: number;
+  lastProcessedTimestamp: number | null;
 };
 
-type RunSessionState = {
-  startTimestamp: number | null;
-  isRunning: boolean;
+type RunSummaryState = {
+  distanceMeters: number;
+  energyKilowattHours: number;
+  lastGpsLatitude: number | null;
+  lastGpsLongitude: number | null;
+  lastPowerKilowatts: number | null;
 };
+
+type RunSessionState = RunAverageState &
+  RunSummaryState & {
+    startTimestamp: number | null;
+    isRunning: boolean;
+  };
 
 export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   const history = useMemo(() => data.slice(-HISTORY_LIMIT), [data]);
   const latest = history[history.length - 1] ?? null;
   const latestTimestamp = latest?.global_ts ?? null;
-  const latestSpeed = latest?.filtered.speed ?? 0;
+  const latestSpeed = (latest?.filtered.speed ?? 0) * 2.23694;
   const latestPowerKw = latest ? calculatePowerKilowatts(latest) : 0;
   const instantEfficiency = latest ? calculateEfficiency(latest) : null;
   const [runSession, setRunSession] = useState<RunSessionState>({
     startTimestamp: null,
     isRunning: false,
+    average: null,
+    sampleCount: 0,
+    lastProcessedTimestamp: null,
+    distanceMeters: 0,
+    energyKilowattHours: 0,
+    lastGpsLatitude: null,
+    lastGpsLongitude: null,
+    lastPowerKilowatts: null,
   });
+  const runTimerTimestamp = runSession.isRunning
+    ? latestTimestamp
+    : runSession.lastProcessedTimestamp;
+  const runTimerLabel =
+    runSession.startTimestamp !== null && runTimerTimestamp !== null
+      ? formatRunTimer(runSession.startTimestamp, runTimerTimestamp)
+      : "0:00.0";
+  const runDistanceMiles = metersToMiles(runSession.distanceMeters);
+  const runEfficiencyRatio =
+    runSession.energyKilowattHours > 0
+      ? runDistanceMiles / runSession.energyKilowattHours
+      : null;
 
   const speedHistory = history.map((sample) => roundTo(sample.gps.speed, 1));
   const powerHistory = history.map((sample) =>
@@ -55,36 +97,103 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   const xAxisLabels = history.map((sample) =>
     formatElapsed(history[0]?.global_ts ?? sample.global_ts, sample.global_ts),
   );
-  const runAverage = useMemo<RunAverageState | null>(() => {
-    const startTimestamp = runSession.startTimestamp;
-
-    if (startTimestamp === null) {
-      return null;
+  useEffect(() => {
+    if (!runSession.isRunning || runSession.lastProcessedTimestamp === null) {
+      return;
     }
 
-    const samples = data
-      .filter((sample) => sample.global_ts >= startTimestamp)
-      .map(calculateEfficiency)
-      .filter((value): value is number => value !== null);
+    const lastProcessedTimestamp = runSession.lastProcessedTimestamp;
+    const incomingSamples = data.filter(
+      (sample) => sample.global_ts > lastProcessedTimestamp,
+    );
 
-    if (samples.length === 0) {
+    if (incomingSamples.length === 0) {
+      return;
+    }
+
+    setRunSession((previous) => {
+      if (!previous.isRunning || previous.lastProcessedTimestamp === null) {
+        return previous;
+      }
+
+      const previousLastProcessedTimestamp = previous.lastProcessedTimestamp;
+      const pendingSamples = incomingSamples.filter(
+        (sample) => sample.global_ts > previousLastProcessedTimestamp,
+      );
+
+      if (pendingSamples.length === 0) {
+        return previous;
+      }
+
+      let average = previous.average;
+      let sampleCount = previous.sampleCount;
+      let lastProcessedTimestamp = previous.lastProcessedTimestamp;
+      let distanceMeters = previous.distanceMeters;
+      let energyKilowattHours = previous.energyKilowattHours;
+      let lastGpsLatitude = previous.lastGpsLatitude;
+      let lastGpsLongitude = previous.lastGpsLongitude;
+      let lastPowerKilowatts = previous.lastPowerKilowatts;
+
+      for (const sample of pendingSamples) {
+        const currentTimestamp = sample.global_ts;
+        const currentPowerKilowatts = calculatePowerKilowatts(sample);
+        const elapsedHours =
+          (Math.max(0, currentTimestamp - lastProcessedTimestamp) /
+            TIMESTAMP_UNITS_PER_SECOND) *
+          HOURS_PER_SECOND;
+
+        if (lastPowerKilowatts !== null && elapsedHours > 0) {
+          energyKilowattHours +=
+            ((lastPowerKilowatts + currentPowerKilowatts) / 2) * elapsedHours;
+        }
+
+        lastPowerKilowatts = currentPowerKilowatts;
+
+        const currentLatitude = sample.gps.lat;
+        const currentLongitude = sample.gps.long;
+
+        if (isValidGpsCoordinate(currentLatitude, currentLongitude)) {
+          if (lastGpsLatitude !== null && lastGpsLongitude !== null) {
+            distanceMeters += calculateLocalTangentDistanceMeters(
+              lastGpsLatitude,
+              lastGpsLongitude,
+              currentLatitude,
+              currentLongitude,
+            );
+          }
+
+          lastGpsLatitude = currentLatitude;
+          lastGpsLongitude = currentLongitude;
+        }
+
+        lastProcessedTimestamp = currentTimestamp;
+
+        const efficiency = calculateEfficiency(sample);
+
+        if (efficiency === null) {
+          continue;
+        }
+
+        sampleCount += 1;
+        average =
+          average === null
+            ? efficiency
+            : average + (efficiency - average) / sampleCount;
+      }
+
       return {
-        average: null,
-        sampleCount: 0,
+        ...previous,
+        average,
+        sampleCount,
+        lastProcessedTimestamp,
+        distanceMeters,
+        energyKilowattHours,
+        lastGpsLatitude,
+        lastGpsLongitude,
+        lastPowerKilowatts,
       };
-    }
-
-    let average = samples[0];
-
-    for (let index = 1; index < samples.length; index += 1) {
-      average += (samples[index] - average) / (index + 1);
-    }
-
-    return {
-      average,
-      sampleCount: samples.length,
-    };
-  }, [data, runSession.startTimestamp]);
+    });
+  }, [data, runSession.isRunning, runSession.lastProcessedTimestamp]);
 
   const toggleRunTracking = async () => {
     if (latestTimestamp === null && !runSession.isRunning) {
@@ -104,14 +213,30 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       setRunSession((previous) => {
         if (previous.isRunning) {
           return {
-            startTimestamp: null,
+            ...previous,
             isRunning: false,
           };
         }
 
+        const startingAverage = instantEfficiency;
+        const startingLatitude = latest?.gps.lat ?? null;
+        const startingLongitude = latest?.gps.long ?? null;
+        const hasValidStartingGps =
+          startingLatitude !== null &&
+          startingLongitude !== null &&
+          isValidGpsCoordinate(startingLatitude, startingLongitude);
+
         return {
           startTimestamp: latestTimestamp,
           isRunning: true,
+          average: startingAverage,
+          sampleCount: startingAverage === null ? 0 : 1,
+          lastProcessedTimestamp: latestTimestamp,
+          distanceMeters: 0,
+          energyKilowattHours: 0,
+          lastGpsLatitude: hasValidStartingGps ? startingLatitude : null,
+          lastGpsLongitude: hasValidStartingGps ? startingLongitude : null,
+          lastPowerKilowatts: latestPowerKw,
         };
       });
 
@@ -177,23 +302,24 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               <MetricPanel
                 label="Recording efficiency"
                 value={
-                  runAverage?.sampleCount
-                    ? formatEfficiency(runAverage.average)
+                  runSession.energyKilowattHours > 0
+                    ? formatEfficiency(runEfficiencyRatio)
                     : "--"
                 }
                 helper={
-                  runAverage?.sampleCount
-                    ? `${runAverage.sampleCount} samples`
-                    : "recorder idle"
+                  runSession.energyKilowattHours > 0
+                    ? runSession.isRunning
+                      ? "distance / energy"
+                      : "distance / energy (last run)"
+                    : runSession.isRunning
+                      ? "waiting for distance + energy"
+                      : "recorder idle"
                 }
               />
             </div>
             <div className="flex items-center justify-between gap-2 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5">
-              <div className="text-xs uppercase tracking-[0.2em] text-white/48">
-                {formatValue(latestPowerKw, 2)} kW
-              </div>
               <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
-                {`${Math.floor(latestTimestamp / 10e5 / 60)} : ${formatValue((latestTimestamp / 10e5) % 60, 1)}`}
+                {runTimerLabel}
               </strong>
               <button
                 type="button"
@@ -228,7 +354,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               currentValue={`${formatValue(latestSpeed * 2.23694, 1)} mph`}
               data={speedHistory.map((speed) => roundTo(speed * 2.23694, 1))}
               labels={xAxisLabels}
-              yMax={Math.max(90, Math.ceil((latestSpeed * 2.23694) / 10) * 10)}
+              yMax={Math.max(30, Math.ceil((latestSpeed * 2.23694) / 10) * 10)}
             />
           ) : (
             <EmptyTelemetryState compact />
@@ -237,24 +363,30 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
         <DashboardCard
           className="min-h-55 lg:col-span-3 lg:row-start-2"
-          title="Signals"
+          title="Run Summary"
         >
-          <div className="grid h-full grid-cols-2 gap-2">
-            <SignalTile
-              label="Brake"
-              value={formatValue(latest?.steering.brake_pressure ?? 0, 1)}
+          <div className="grid h-full grid-cols-1 gap-2">
+            <MetricPanel
+              label="Distance"
+              value={formatDistanceMiles(runDistanceMiles)}
+              helper={
+                runSession.startTimestamp !== null
+                  ? runSession.isRunning
+                    ? "local tangent plane"
+                    : "last recorded run"
+                  : "start recording to track"
+              }
             />
-            <SignalTile
-              label="Steer"
-              value={`${formatValue(latest?.steering.turn_angle ?? 0, 1)} deg`}
-            />
-            <SignalTile
-              label="Throttle"
-              value={`${formatThrottle(latest?.motor.throttle ?? 0)}%`}
-            />
-            <SignalTile
-              label="Filtered speed"
-              value={`${formatValue(latest?.filtered.speed ?? 0, 1)} mph`}
+            <MetricPanel
+              label="Energy Used"
+              value={formatEnergyWattHours(
+                runSession.energyKilowattHours * 1000,
+              )}
+              helper={
+                runSession.startTimestamp !== null
+                  ? "trapezoid estimate"
+                  : "power integral pending"
+              }
             />
           </div>
         </DashboardCard>
@@ -322,19 +454,6 @@ function MetricPanel({
         {value}
       </div>
       <div className="mt-1 text-xs text-white/55">{helper}</div>
-    </div>
-  );
-}
-
-function SignalTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-h-0 flex-col justify-between rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5 text-left">
-      <div className="text-[11px] uppercase tracking-[0.18em] text-white/42">
-        {label}
-      </div>
-      <div className="mt-2 text-lg font-semibold leading-tight text-white xl:text-xl">
-        {value}
-      </div>
     </div>
   );
 }
@@ -457,8 +576,74 @@ function calculateEfficiency(sample: SocketData): number | null {
   return (sample.filtered.speed * 2.23694) / powerKw;
 }
 
+function calculateLocalTangentDistanceMeters(
+  originLatitude: number,
+  originLongitude: number,
+  targetLatitude: number,
+  targetLongitude: number,
+): number {
+  const origin = geodeticToEcef(originLatitude, originLongitude);
+  const target = geodeticToEcef(targetLatitude, targetLongitude);
+  const deltaX = target.x - origin.x;
+  const deltaY = target.y - origin.y;
+  const deltaZ = target.z - origin.z;
+  const originLatitudeRadians = degreesToRadians(originLatitude);
+  const originLongitudeRadians = degreesToRadians(originLongitude);
+  const east =
+    -Math.sin(originLongitudeRadians) * deltaX +
+    Math.cos(originLongitudeRadians) * deltaY;
+  const north =
+    -Math.sin(originLatitudeRadians) *
+      Math.cos(originLongitudeRadians) *
+      deltaX -
+    Math.sin(originLatitudeRadians) *
+      Math.sin(originLongitudeRadians) *
+      deltaY +
+    Math.cos(originLatitudeRadians) * deltaZ;
+
+  return Math.hypot(east, north);
+}
+
+function geodeticToEcef(latitude: number, longitude: number) {
+  const latitudeRadians = degreesToRadians(latitude);
+  const longitudeRadians = degreesToRadians(longitude);
+  const sinLatitude = Math.sin(latitudeRadians);
+  const cosLatitude = Math.cos(latitudeRadians);
+  const sinLongitude = Math.sin(longitudeRadians);
+  const cosLongitude = Math.cos(longitudeRadians);
+  const radiusOfCurvature =
+    WGS84_SEMI_MAJOR_AXIS /
+    Math.sqrt(1 - WGS84_ECCENTRICITY_SQUARED * sinLatitude ** 2);
+
+  return {
+    x: radiusOfCurvature * cosLatitude * cosLongitude,
+    y: radiusOfCurvature * cosLatitude * sinLongitude,
+    z: radiusOfCurvature * (1 - WGS84_ECCENTRICITY_SQUARED) * sinLatitude,
+  };
+}
+
+function degreesToRadians(value: number): number {
+  return (value * Math.PI) / 180;
+}
+
+function isValidGpsCoordinate(latitude: number, longitude: number): boolean {
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude !== 0 &&
+    longitude !== 0
+  );
+}
+
+function metersToMiles(value: number): number {
+  return value / METERS_PER_MILE;
+}
+
 function formatElapsed(startTs: number, currentTs: number): string {
-  const elapsedSeconds = Math.max(0, (currentTs - startTs) / 1e5);
+  const elapsedSeconds = Math.max(
+    0,
+    (currentTs - startTs) / TIMESTAMP_UNITS_PER_SECOND,
+  );
 
   if (elapsedSeconds < 60) {
     return `${Math.round(elapsedSeconds)}s`;
@@ -468,6 +653,25 @@ function formatElapsed(startTs: number, currentTs: number): string {
   const seconds = Math.floor(elapsedSeconds % 60);
 
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function formatRunTimer(startTs: number, currentTs: number): string {
+  const elapsedSeconds = Math.max(
+    0,
+    (currentTs - startTs) / TIMESTAMP_UNITS_PER_SECOND,
+  );
+  const minutes = Math.floor(elapsedSeconds / 60);
+  const seconds = elapsedSeconds - minutes * 60;
+
+  return `${minutes}:${seconds.toFixed(1).padStart(4, "0")}`;
+}
+
+function formatDistanceMiles(value: number): string {
+  return Number.isFinite(value) ? `${value.toFixed(3)} mi` : "--";
+}
+
+function formatEnergyWattHours(value: number): string {
+  return Number.isFinite(value) ? `${value.toFixed(3)} Wh` : "--";
 }
 
 function formatValue(value: number, decimals: number): string {
@@ -480,11 +684,6 @@ function formatEfficiency(value: number | null): string {
   }
 
   return `${value.toFixed(2)} mi/kWh`;
-}
-
-function formatThrottle(value: number): string {
-  const normalized = Math.abs(value) <= 1 ? value * 100 : value;
-  return formatValue(normalized, 0);
 }
 
 function roundTo(value: number, decimals: number): number {
