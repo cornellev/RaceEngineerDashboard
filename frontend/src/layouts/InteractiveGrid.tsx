@@ -259,7 +259,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   };
 
   return (
-    <div className="grid min-h-full w-full text-white grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(100,0.9fr)_minmax(100,1fr)] m-0 px-3 py-3 sm:px-4 lg:px-5">
+    <div className="grid min-h-full w-full text-white grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(100,0.9fr)_minmax(100,1fr)] m-0 px-3 pt-2 pb-3.5 sm:px-4 lg:px-5">
       <DashboardCard
         className="min-h-42.5 lg:col-span-3 lg:row-start-1"
         title="Speed"
