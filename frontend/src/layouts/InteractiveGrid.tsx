@@ -52,6 +52,8 @@ type RunSummaryState = {
   lastGpsLatitude: number | null;
   lastGpsLongitude: number | null;
   lastPowerKilowatts: number | null;
+  lastSpeed: number | null;
+  lapTimes: number[];
 };
 
 type RunSessionState = RunAverageState &
@@ -79,6 +81,8 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
     lastGpsLatitude: null,
     lastGpsLongitude: null,
     lastPowerKilowatts: null,
+    lastSpeed: null,
+    lapTimes: [],
   });
   const runTimerTimestamp = runSession.isRunning
     ? latestTimestamp
@@ -136,6 +140,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       let lastGpsLatitude = previous.lastGpsLatitude;
       let lastGpsLongitude = previous.lastGpsLongitude;
       let lastPowerKilowatts = previous.lastPowerKilowatts;
+      let lastSpeed = previous.lastSpeed;
 
       for (const sample of pendingSamples) {
         const currentTimestamp = sample.global_ts;
@@ -150,6 +155,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             ((lastPowerKilowatts + currentPowerKilowatts) / 2) * elapsedHours;
         }
 
+        lastSpeed = Math.max(sample.filtered.speed, lastSpeed ?? 0);
         lastPowerKilowatts = currentPowerKilowatts;
 
         const currentLatitude = sample.gps.lat;
@@ -194,6 +200,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         lastGpsLatitude,
         lastGpsLongitude,
         lastPowerKilowatts,
+        lastSpeed,
       };
     });
   }, [data, runSession.isRunning, runSession.lastProcessedTimestamp]);
@@ -244,6 +251,8 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           lastGpsLatitude: hasValidStartingGps ? startingLatitude : null,
           lastGpsLongitude: hasValidStartingGps ? startingLongitude : null,
           lastPowerKilowatts: latestPowerKw,
+          lastSpeed: 0,
+          lapTimes: [],
         };
       });
 
@@ -282,7 +291,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               <GaugePointer />
             </GaugeContainer>
             <div className="flex min-w-0 flex-1 flex-col items-end text-right">
-              <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
+              <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl font-mono">
                 {formatValue(latestSpeed, 1)}
               </strong>
               <span className="mt-1 text-sm uppercase tracking-[0.2em] text-white/55">
@@ -290,15 +299,14 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               </span>
             </div>
           </div>
-          <div className="grid h-1/3 grid-cols-2">
-            <MetricPanel
-              label="Min"
-              value={`${formatValue(Math.min(...speedHistory) * 2.23694, 1)}`}
-              helper={`${runSession.isRunning ? "mph" : "Recorder idle"}`}
-            />
+          <div className="h-1/3">
             <MetricPanel
               label="Max"
-              value={`${formatValue(Math.max(...speedHistory) * 2.23694, 1)}`}
+              value={
+                runSession.lastSpeed
+                  ? `${formatValue(runSession.lastSpeed * 2.23694, 1)} mph`
+                  : "--"
+              }
               helper={`${runSession.isRunning ? "mph" : "Recorder idle"}`}
             />
           </div>
@@ -312,23 +320,27 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         <div className="flex h-full flex-col justify-between gap-3">
           <div className="grid grid-cols-2 gap-2">
             <MetricPanel
-              label="Instantaneous Efficiency"
+              label="Instant Efficiency"
               value={
                 instantEfficiency
                   ? instantEfficiency >= 100
-                    ? "High"
-                    : "Low"
+                    ? "MAX"
+                    : `${formatEfficiency(instantEfficiency)}`
                   : "--"
               }
-              helper={`${formatEfficiency(instantEfficiency)}`}
+              helper={
+                instantEfficiency
+                  ? instantEfficiency >= 100
+                    ? `${formatEfficiency(instantEfficiency)}`
+                    : "mi/kWh"
+                  : "no data to display"
+              }
             />
             <MetricPanel
               label="Recording efficiency"
               value={
                 runSession.energyKilowattHours > 0
-                  ? runSession.isRunning
-                    ? formatEfficiency(runEfficiencyRatio)
-                    : formatEfficiency(runEfficiencyRatio)
+                  ? formatEfficiency(runEfficiencyRatio)
                   : "--"
               }
               helper={
@@ -338,13 +350,13 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                     : "distance / energy (last run)"
                   : runSession.isRunning
                     ? "waiting for distance + energy"
-                    : "recorder idle"
+                    : "start recording to track"
               }
             />
             <MetricPanel
               label="Distance"
               value={
-                runSession.isRunning
+                runSession.startTimestamp
                   ? formatDistanceMiles(runDistanceMiles)
                   : "--"
               }
@@ -359,7 +371,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             <MetricPanel
               label="Energy Used"
               value={
-                runSession.isRunning
+                runSession.startTimestamp
                   ? formatEnergyWattHours(runSession.energyKilowattHours * 1000)
                   : "--"
               }
@@ -372,8 +384,11 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               }
             />
           </div>
+          {runSession.lapTimes.length >= 1 ? (
+            <div className="flex justify-between">Lap Times</div>
+          ) : null}
           <div className="flex items-center justify-between gap-2 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5">
-            <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
+            <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl font-mono">
               {runTimerLabel}
             </strong>
             <p
@@ -433,6 +448,10 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             <LinearProgress
               variant="determinate"
               value={latest?.steering.brake_pressure ?? 2}
+              sx={{
+                height: 10,
+                borderRadius: 2,
+              }}
             />
           </SignalTile>
           <SignalTile label="Steer">
@@ -453,6 +472,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                     fill: "#1976D2",
                   },
                   [`& .${gaugeClasses.valueText}`]: {
+                    fontFamily: "monospace",
                     fontWeight: 500,
                     fontSize: 22,
                     transform: "translate(0px, 0px)",
@@ -564,7 +584,7 @@ function SignalTile({
       </div>
       {children}
       {value ? (
-        <div className="mt-2 text-lg font-semibold leading-tight text-white xl:text-xl">
+        <div className="mt-2 text-lg font-semibold leading-tight text-white xl:text-xl font-mono">
           {value}
         </div>
       ) : null}
@@ -586,7 +606,7 @@ function MetricPanel({
       <div className="text-[11px] uppercase tracking-[0.22em] text-white/42">
         {label}
       </div>
-      <div className="mt-2 text-2xl font-semibold leading-none text-white xl:text-3xl">
+      <div className="mt-2 text-2xl font-semibold leading-none text-white xl:text-3xl font-mono">
         {value}
       </div>
       <div className="mt-1 text-xs text-white/55">{helper}</div>
