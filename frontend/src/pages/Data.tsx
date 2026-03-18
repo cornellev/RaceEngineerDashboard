@@ -3,7 +3,7 @@ import type { SocketData } from "../utils/Socket";
 
 export default function Data({ data }: { data: SocketData[] }) {
   return (
-    <section className="h-[calc(100vh-10vh)] w-full overflow-hidden px-3 py-3 sm:px-4 lg:px-5">
+    <section className="h-[min(92.5vh,calc(100vh-67px))] w-full overflow-y-scroll ">
       <InteractiveGrid data={data} />
     </section>
   );

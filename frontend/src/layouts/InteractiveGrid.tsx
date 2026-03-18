@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { LineChart } from "@mui/x-charts";
 import {
+  Gauge,
   GaugeContainer,
   gaugeClasses,
   GaugeReferenceArc,
@@ -258,230 +259,261 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   };
 
   return (
-    <div className="mx-0 my-auto flex h-full w-full flex-col text-white">
-      <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(0,0.9fr)_minmax(0,1fr)]">
-        <DashboardCard
-          className="min-h-42.5 lg:col-span-3 lg:row-start-1"
-          title="Speed"
-        >
-          <div className="flex h-full flex-col justify-end">
-            <div className="flex h-1/2 items-center justify-between gap-3">
-              <GaugeContainer
-                width={180}
-                height={180}
+    <div className="grid min-h-full w-full text-white grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(100,0.9fr)_minmax(100,1fr)] m-0 px-3 py-3 sm:px-4 lg:px-5">
+      <DashboardCard
+        className="min-h-42.5 lg:col-span-3 lg:row-start-1"
+        title="Speed"
+      >
+        <div className="flex h-full flex-col justify-end">
+          <div className="flex h-1/2 items-center justify-between gap-3">
+            <GaugeContainer
+              width={180}
+              height={180}
+              startAngle={-110}
+              endAngle={110}
+              value={Math.max(0, Math.min(latestSpeed, SPEEDOMETER_MAX_MPH))}
+              sx={() => ({
+                [`& .${gaugeClasses.referenceArc}`]: {
+                  fill: "rgba(255,255,255,0.16)",
+                },
+              })}
+            >
+              <GaugeReferenceArc />
+              <GaugePointer />
+            </GaugeContainer>
+            <div className="flex min-w-0 flex-1 flex-col items-end text-right">
+              <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
+                {formatValue(latestSpeed, 1)}
+              </strong>
+              <span className="mt-1 text-sm uppercase tracking-[0.2em] text-white/55">
+                MPH
+              </span>
+            </div>
+          </div>
+          <div className="grid h-1/3 grid-cols-2">
+            <MetricPanel
+              label="Min"
+              value={`${formatValue(Math.min(...speedHistory) * 2.23694, 1)}`}
+              helper={`${runSession.isRunning ? "mph" : "Recorder idle"}`}
+            />
+            <MetricPanel
+              label="Max"
+              value={`${formatValue(Math.max(...speedHistory) * 2.23694, 1)}`}
+              helper={`${runSession.isRunning ? "mph" : "Recorder idle"}`}
+            />
+          </div>
+        </div>
+      </DashboardCard>
+
+      <DashboardCard
+        className="min-h-42.5 lg:col-span-5 lg:row-start-1"
+        title="Run Summary"
+      >
+        <div className="flex h-full flex-col justify-between gap-3">
+          <div className="grid grid-cols-2 gap-2">
+            <MetricPanel
+              label="Instantaneous Efficiency"
+              value={
+                instantEfficiency
+                  ? instantEfficiency >= 100
+                    ? "High"
+                    : "Low"
+                  : "--"
+              }
+              helper={`${formatEfficiency(instantEfficiency)}`}
+            />
+            <MetricPanel
+              label="Recording efficiency"
+              value={
+                runSession.energyKilowattHours > 0
+                  ? runSession.isRunning
+                    ? formatEfficiency(runEfficiencyRatio)
+                    : formatEfficiency(runEfficiencyRatio)
+                  : "--"
+              }
+              helper={
+                runSession.energyKilowattHours > 0
+                  ? runSession.isRunning
+                    ? "distance / energy"
+                    : "distance / energy (last run)"
+                  : runSession.isRunning
+                    ? "waiting for distance + energy"
+                    : "recorder idle"
+              }
+            />
+            <MetricPanel
+              label="Distance"
+              value={
+                runSession.isRunning
+                  ? formatDistanceMiles(runDistanceMiles)
+                  : "--"
+              }
+              helper={
+                runSession.startTimestamp !== null
+                  ? runSession.isRunning
+                    ? "local tangent plane"
+                    : "last recorded run"
+                  : "start recording to track"
+              }
+            />
+            <MetricPanel
+              label="Energy Used"
+              value={
+                runSession.isRunning
+                  ? formatEnergyWattHours(runSession.energyKilowattHours * 1000)
+                  : "--"
+              }
+              helper={
+                runSession.startTimestamp !== null
+                  ? runSession.isRunning
+                    ? "trapezoid estimate"
+                    : "power integral pending"
+                  : "start recording to track"
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between gap-2 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5">
+            <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
+              {runTimerLabel}
+            </strong>
+            <p
+              className={`transition-opacity duration-1000 ease-in-out ${warn ? "opacity-100" : "opacity-0"}`}
+            >
+              No data to record
+            </p>
+            <button
+              type="button"
+              className={`rounded-full focus:outline-0 border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+                runSession.isRunning
+                  ? "border-[#ef4444] bg-[#ef4444]/12 text-[#ffd0d0] hover:bg-[#ef4444]/18"
+                  : "border-[#22c55e] bg-[#22c55e]/12 text-[#dcffe9] hover:bg-[#22c55e]/18"
+              }`}
+              onClick={toggleRunTracking}
+            >
+              {runSession.isRunning ? "Stop" : "Start"}
+            </button>
+          </div>
+        </div>
+      </DashboardCard>
+
+      <DashboardCard className="min-h-42.5 lg:col-span-4 lg:row-start-1">
+        <MapComponent
+          latitude={latest?.gps.lat ?? null}
+          longitude={latest?.gps.long ?? null}
+          className="min-h-0"
+        />
+      </DashboardCard>
+
+      <DashboardCard
+        className="min-h-55 lg:col-span-5 lg:row-start-2"
+        title="Speed v. Time"
+      >
+        {history.length > 0 ? (
+          <CompactChart
+            accentColor="#fb923c"
+            currentValue={`${formatValue(latestSpeed * 2.23694, 1)} mph`}
+            data={speedHistory.map((speed) => roundTo(speed * 2.23694, 1))}
+            labels={xAxisLabels}
+            yMax={Math.max(30, Math.ceil((latestSpeed * 2.23694) / 10) * 10)}
+          />
+        ) : (
+          <EmptyTelemetryState compact />
+        )}
+      </DashboardCard>
+
+      <DashboardCard
+        className="min-h-55 lg:col-span-3 lg:row-start-2"
+        title="Signals"
+      >
+        <div className="grid h-full grid-cols-2 gap-2">
+          <SignalTile
+            label="Brake"
+            value={formatValue(latest?.steering.brake_pressure ?? 0, 1)}
+          >
+            <LinearProgress
+              variant="determinate"
+              value={latest?.steering.brake_pressure ?? 2}
+            />
+          </SignalTile>
+          <SignalTile label="Steer">
+            <div className="h-4/5">
+              <Gauge
+                value={
+                  latest?.steering.turn_angle
+                    ? 50 - latest.steering.turn_angle
+                    : 50
+                }
                 startAngle={-110}
                 endAngle={110}
-                value={Math.max(0, Math.min(latestSpeed, SPEEDOMETER_MAX_MPH))}
-                sx={() => ({
+                sx={{
                   [`& .${gaugeClasses.referenceArc}`]: {
-                    fill: "rgba(255,255,255,0.16)",
+                    fill: "#A7CAED",
                   },
-                })}
-              >
-                <GaugeReferenceArc />
-                <GaugePointer />
-              </GaugeContainer>
-              <div className="flex min-w-0 flex-1 flex-col items-end text-right">
-                <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
-                  {formatValue(latestSpeed, 1)}
-                </strong>
-                <span className="mt-1 text-sm uppercase tracking-[0.2em] text-white/55">
-                  MPH
-                </span>
-              </div>
-            </div>
-            <div className="grid h-1/3 grid-cols-2">
-              <MetricPanel
-                label="Min"
-                value={`${formatValue(Math.min(...speedHistory) * 2.23694, 1)}`}
-                helper={`${runSession.isRunning ? "mph" : "Recorder idle"}`}
-              />
-              <MetricPanel
-                label="Max"
-                value={`${formatValue(Math.max(...speedHistory) * 2.23694, 1)}`}
-                helper={`${runSession.isRunning ? "mph" : "Recorder idle"}`}
+                  [`& .${gaugeClasses.valueArc}`]: {
+                    fill: "#1976D2",
+                  },
+                  [`& .${gaugeClasses.valueText}`]: {
+                    fontWeight: 500,
+                    fontSize: 22,
+                    transform: "translate(0px, 0px)",
+                  },
+                  [`& .${gaugeClasses.valueText} text`]: {
+                    fill: "white",
+                  },
+                }}
+                text={() =>
+                  `${formatValue(latest?.steering.turn_angle ?? 0, 1)}°`
+                }
+                skipAnimation
               />
             </div>
-          </div>
-        </DashboardCard>
+          </SignalTile>
+          <SignalTile
+            label="Throttle"
+            value={`${formatThrottle(latest?.motor.throttle ?? 0)}%`}
+          >
+            <div className="h-full">
+              <VerticalThrottle value={latest?.motor.throttle ?? 4} />
+            </div>
+          </SignalTile>
+          <SignalTile label="RPM">
+            <div className="h-9/10 grid grid-rows-2 grid-cols-2 gap-3">
+              <SignalTile
+                label="FL"
+                value={`${latest?.rpm_front.rpm_left ?? 0}`}
+              />
+              <SignalTile
+                label="FR"
+                value={`${latest?.rpm_front.rpm_right ?? 0}`}
+              />
+              <SignalTile
+                label="BL"
+                value={`${latest?.rpm_back.rpm_left ?? 0}`}
+              />
+              <SignalTile
+                label="BR"
+                value={`${latest?.rpm_back.rpm_right ?? 0}`}
+              />
+            </div>
+          </SignalTile>
+        </div>
+      </DashboardCard>
 
-        <DashboardCard
-          className="min-h-42.5 lg:col-span-5 lg:row-start-1"
-          title="Run Summary"
-        >
-          <div className="flex h-full flex-col justify-between gap-3">
-            <div className="grid grid-cols-2 gap-2">
-              <MetricPanel
-                label="Instantaneous Efficiency"
-                value={formatEfficiency(instantEfficiency)}
-                helper="mi/kWh"
-              />
-              <MetricPanel
-                label="Recording efficiency"
-                value={
-                  runSession.energyKilowattHours > 0
-                    ? runSession.isRunning
-                      ? formatEfficiency(runEfficiencyRatio)
-                      : formatEfficiency(runEfficiencyRatio)
-                    : "--"
-                }
-                helper={
-                  runSession.energyKilowattHours > 0
-                    ? runSession.isRunning
-                      ? "distance / energy"
-                      : "distance / energy (last run)"
-                    : runSession.isRunning
-                      ? "waiting for distance + energy"
-                      : "recorder idle"
-                }
-              />
-              <MetricPanel
-                label="Distance"
-                value={
-                  runSession.isRunning
-                    ? formatDistanceMiles(runDistanceMiles)
-                    : "--"
-                }
-                helper={
-                  runSession.startTimestamp !== null
-                    ? runSession.isRunning
-                      ? "local tangent plane"
-                      : "last recorded run"
-                    : "start recording to track"
-                }
-              />
-              <MetricPanel
-                label="Energy Used"
-                value={
-                  runSession.isRunning
-                    ? formatEnergyWattHours(
-                        runSession.energyKilowattHours * 1000,
-                      )
-                    : "--"
-                }
-                helper={
-                  runSession.startTimestamp !== null
-                    ? runSession.isRunning
-                      ? "trapezoid estimate"
-                      : "power integral pending"
-                    : "start recording to track"
-                }
-              />
-            </div>
-            <div className="flex items-center justify-between gap-2 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5">
-              <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
-                {runTimerLabel}
-              </strong>
-              <p
-                className={`transition-opacity duration-1000 ease-in-out ${warn ? "opacity-100" : "opacity-0"}`}
-              >
-                No data to record
-              </p>
-              <button
-                type="button"
-                className={`rounded-full focus:outline-0 border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition ${
-                  runSession.isRunning
-                    ? "border-[#ef4444] bg-[#ef4444]/12 text-[#ffd0d0] hover:bg-[#ef4444]/18"
-                    : "border-[#22c55e] bg-[#22c55e]/12 text-[#dcffe9] hover:bg-[#22c55e]/18"
-                }`}
-                onClick={toggleRunTracking}
-              >
-                {runSession.isRunning ? "Stop" : "Start"}
-              </button>
-            </div>
-          </div>
-        </DashboardCard>
-
-        <DashboardCard className="min-h-42.5 lg:col-span-4 lg:row-start-1">
-          <MapComponent
-            latitude={latest?.gps.lat ?? null}
-            longitude={latest?.gps.long ?? null}
-            className="min-h-0"
+      <DashboardCard
+        className="min-h-55 lg:col-span-4 lg:row-start-2"
+        title="Power v. Time"
+      >
+        {history.length > 0 ? (
+          <CompactChart
+            accentColor="#22c55e"
+            currentValue={`${formatValue(latestPowerKw, 2)} kW`}
+            data={powerHistory}
+            labels={xAxisLabels}
           />
-        </DashboardCard>
-
-        <DashboardCard
-          className="min-h-55 lg:col-span-5 lg:row-start-2"
-          title="Speed v. Time"
-        >
-          {history.length > 0 ? (
-            <CompactChart
-              accentColor="#fb923c"
-              currentValue={`${formatValue(latestSpeed * 2.23694, 1)} mph`}
-              data={speedHistory.map((speed) => roundTo(speed * 2.23694, 1))}
-              labels={xAxisLabels}
-              yMax={Math.max(30, Math.ceil((latestSpeed * 2.23694) / 10) * 10)}
-            />
-          ) : (
-            <EmptyTelemetryState compact />
-          )}
-        </DashboardCard>
-
-        <DashboardCard
-          className="min-h-55 lg:col-span-3 lg:row-start-2"
-          title="Signals"
-        >
-          <div className="grid h-full grid-cols-2 gap-2">
-            <SignalTile
-              label="Brake"
-              value={formatValue(latest?.steering.brake_pressure ?? 0, 1)}
-            >
-              <LinearProgress
-                variant="determinate"
-                value={latest?.steering.brake_pressure ?? 40}
-              />
-            </SignalTile>
-            <SignalTile
-              label="Steer"
-              value={`${formatValue(latest?.steering.turn_angle ?? 0, 1)} deg`}
-            />
-            <SignalTile
-              label="Throttle"
-              value={`${formatThrottle(latest?.motor.throttle ?? 0)}%`}
-            >
-              <div className="h-full">
-                <VerticalThrottle value={latest?.motor.throttle ?? 67} />
-              </div>
-            </SignalTile>
-            <SignalTile label="RPM">
-              <div className="h-9/10 grid grid-rows-2 grid-cols-2 gap-3">
-                <SignalTile
-                  label="FL"
-                  value={`${latest?.rpm_front.rpm_left ?? 0}`}
-                />
-                <SignalTile
-                  label="FR"
-                  value={`${latest?.rpm_front.rpm_right ?? 0}`}
-                />
-                <SignalTile
-                  label="BL"
-                  value={`${latest?.rpm_back.rpm_left ?? 0}`}
-                />
-                <SignalTile
-                  label="BR"
-                  value={`${latest?.rpm_back.rpm_right ?? 0}`}
-                />
-              </div>
-            </SignalTile>
-          </div>
-        </DashboardCard>
-
-        <DashboardCard
-          className="min-h-55 lg:col-span-4 lg:row-start-2"
-          title="Power v. Time"
-        >
-          {history.length > 0 ? (
-            <CompactChart
-              accentColor="#22c55e"
-              currentValue={`${formatValue(latestPowerKw, 2)} kW`}
-              data={powerHistory}
-              labels={xAxisLabels}
-            />
-          ) : (
-            <EmptyTelemetryState compact />
-          )}
-        </DashboardCard>
-      </div>
+        ) : (
+          <EmptyTelemetryState compact />
+        )}
+      </DashboardCard>
     </div>
   );
 }
@@ -499,7 +531,7 @@ function DashboardCard({
 }) {
   return (
     <section
-      className={`flex min-h-0 flex-col overflow-hidden rounded-[1.25rem] border border-white/8 bg-[linear-gradient(180deg,#242424,#252525)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] ${className}`}
+      className={`flex min-h-90 flex-col overflow-hidden rounded-[1.25rem] border border-white/8 bg-[linear-gradient(180deg,#242424,#252525)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] ${className}`}
     >
       {title ? (
         <div className="mb-2 flex items-center justify-between text-left">
@@ -672,6 +704,7 @@ function VerticalThrottle({ value }: { value: number }) {
     <div
       style={{
         width: 120,
+        marginTop: "0.7vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -683,8 +716,8 @@ function VerticalThrottle({ value }: { value: number }) {
         sx={{
           height: 30,
           width: "100%", // becomes height after rotation
-          transform: "translateX(-90px) rotate(-90deg)",
-          transformOrigin: "bottom right",
+          transform: "translateX(-120px) rotate(-90deg)",
+          transformOrigin: "top right",
           borderRadius: "10px",
         }}
       />
