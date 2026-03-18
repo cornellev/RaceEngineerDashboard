@@ -40,7 +40,7 @@ function App() {
   return (
     <>
       <Header setPage={setPage} setSideBar={setSideBar} sideBar={sideBar} />
-      <div className="w-screen h-[9vh] mx-auto px-4 sm:px-6 lg:px-8" />
+      <div className="w-screen h-[8vh] mx-auto px-4 sm:px-6 lg:px-8" />
       <SideBar open={sideBar} />
       <main
         className={`${sideBar ? "w-[80%]" : "w-screen"} h-full transition-all duration-300 ease-in-out m-0 p-0`}

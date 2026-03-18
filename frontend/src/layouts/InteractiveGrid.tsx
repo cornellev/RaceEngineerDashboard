@@ -65,6 +65,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   const latestSpeed = (latest?.filtered.speed ?? 0) * 2.23694;
   const latestPowerKw = latest ? calculatePowerKilowatts(latest) : 0;
   const instantEfficiency = latest ? calculateEfficiency(latest) : null;
+  const [warn, setWarn] = useState<boolean>(false);
   const [runSession, setRunSession] = useState<RunSessionState>({
     startTimestamp: null,
     isRunning: false,
@@ -198,6 +199,10 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   const toggleRunTracking = async () => {
     if (latestTimestamp === null && !runSession.isRunning) {
       console.warn("Cannot start run tracking without any telemetry data");
+      setWarn(true);
+      setTimeout(() => {
+        setWarn(false);
+      }, 1000);
       return;
     }
 
@@ -258,44 +263,55 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           className="min-h-42.5 lg:col-span-3 lg:row-start-1"
           title="Speed"
         >
-          <div className="flex h-full items-center justify-between gap-3">
-            <GaugeContainer
-              width={180}
-              height={180}
-              startAngle={-110}
-              endAngle={110}
-              value={Math.max(0, Math.min(latestSpeed, SPEEDOMETER_MAX_MPH))}
-              sx={() => ({
-                [`& .${gaugeClasses.referenceArc}`]: {
-                  fill: "rgba(255,255,255,0.16)",
-                },
-              })}
-            >
-              <GaugeReferenceArc />
-              <GaugePointer />
-            </GaugeContainer>
-            <div className="flex min-w-0 flex-1 flex-col items-end text-right">
-              <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
-                {formatValue(latestSpeed, 1)}
-              </strong>
-              <span className="mt-1 text-sm uppercase tracking-[0.2em] text-white/55">
-                MPH
-              </span>
-              <span className="mt-4 text-xs text-white/45">
-                RPM {formatValue(latest?.filtered.speed ?? 0, 1)}
-              </span>
+          <div className="flex h-full flex-col justify-end">
+            <div className="flex h-1/2 items-center justify-between gap-3">
+              <GaugeContainer
+                width={180}
+                height={180}
+                startAngle={-110}
+                endAngle={110}
+                value={Math.max(0, Math.min(latestSpeed, SPEEDOMETER_MAX_MPH))}
+                sx={() => ({
+                  [`& .${gaugeClasses.referenceArc}`]: {
+                    fill: "rgba(255,255,255,0.16)",
+                  },
+                })}
+              >
+                <GaugeReferenceArc />
+                <GaugePointer />
+              </GaugeContainer>
+              <div className="flex min-w-0 flex-1 flex-col items-end text-right">
+                <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
+                  {formatValue(latestSpeed, 1)}
+                </strong>
+                <span className="mt-1 text-sm uppercase tracking-[0.2em] text-white/55">
+                  MPH
+                </span>
+              </div>
+            </div>
+            <div className="grid h-1/3 grid-cols-2">
+              <MetricPanel
+                label="Min"
+                value={`${formatValue(Math.min(...speedHistory) * 2.23694, 1)}`}
+                helper={`${runSession.isRunning ? "mph" : "Recorder idle"}`}
+              />
+              <MetricPanel
+                label="Max"
+                value={`${formatValue(Math.max(...speedHistory) * 2.23694, 1)}`}
+                helper={`${runSession.isRunning ? "mph" : "Recorder idle"}`}
+              />
             </div>
           </div>
         </DashboardCard>
 
         <DashboardCard
           className="min-h-42.5 lg:col-span-5 lg:row-start-1"
-          title="Efficiency"
+          title="Run Summary"
         >
           <div className="flex h-full flex-col justify-between gap-3">
             <div className="grid grid-cols-2 gap-2">
               <MetricPanel
-                label="Instantaneous"
+                label="Instantaneous Efficiency"
                 value={formatEfficiency(instantEfficiency)}
                 helper="mi/kWh"
               />
@@ -303,7 +319,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 label="Recording efficiency"
                 value={
                   runSession.energyKilowattHours > 0
-                    ? formatEfficiency(runEfficiencyRatio)
+                    ? runSession.isRunning
+                      ? formatEfficiency(runEfficiencyRatio)
+                      : formatEfficiency(runEfficiencyRatio)
                     : "--"
                 }
                 helper={
@@ -316,14 +334,51 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                       : "recorder idle"
                 }
               />
+              <MetricPanel
+                label="Distance"
+                value={
+                  runSession.isRunning
+                    ? formatDistanceMiles(runDistanceMiles)
+                    : "--"
+                }
+                helper={
+                  runSession.startTimestamp !== null
+                    ? runSession.isRunning
+                      ? "local tangent plane"
+                      : "last recorded run"
+                    : "start recording to track"
+                }
+              />
+              <MetricPanel
+                label="Energy Used"
+                value={
+                  runSession.isRunning
+                    ? formatEnergyWattHours(
+                        runSession.energyKilowattHours * 1000,
+                      )
+                    : "--"
+                }
+                helper={
+                  runSession.startTimestamp !== null
+                    ? runSession.isRunning
+                      ? "trapezoid estimate"
+                      : "power integral pending"
+                    : "start recording to track"
+                }
+              />
             </div>
             <div className="flex items-center justify-between gap-2 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5">
               <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl">
                 {runTimerLabel}
               </strong>
+              <p
+                className={`transition-opacity duration-1000 ease-in-out ${warn ? "opacity-100" : "opacity-0"}`}
+              >
+                No data to record
+              </p>
               <button
                 type="button"
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+                className={`rounded-full focus:outline-0 border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition ${
                   runSession.isRunning
                     ? "border-[#ef4444] bg-[#ef4444]/12 text-[#ffd0d0] hover:bg-[#ef4444]/18"
                     : "border-[#22c55e] bg-[#22c55e]/12 text-[#dcffe9] hover:bg-[#22c55e]/18"
@@ -363,30 +418,24 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
         <DashboardCard
           className="min-h-55 lg:col-span-3 lg:row-start-2"
-          title="Run Summary"
+          title="Signals"
         >
-          <div className="grid h-full grid-cols-1 gap-2">
-            <MetricPanel
-              label="Distance"
-              value={formatDistanceMiles(runDistanceMiles)}
-              helper={
-                runSession.startTimestamp !== null
-                  ? runSession.isRunning
-                    ? "local tangent plane"
-                    : "last recorded run"
-                  : "start recording to track"
-              }
+          <div className="grid h-full grid-cols-2 gap-2">
+            <SignalTile
+              label="Brake"
+              value={formatValue(latest?.steering.brake_pressure ?? 0, 1)}
             />
-            <MetricPanel
-              label="Energy Used"
-              value={formatEnergyWattHours(
-                runSession.energyKilowattHours * 1000,
-              )}
-              helper={
-                runSession.startTimestamp !== null
-                  ? "trapezoid estimate"
-                  : "power integral pending"
-              }
+            <SignalTile
+              label="Steer"
+              value={`${formatValue(latest?.steering.turn_angle ?? 0, 1)} deg`}
+            />
+            <SignalTile
+              label="Throttle"
+              value={`${formatThrottle(latest?.motor.throttle ?? 0)}%`}
+            />
+            <SignalTile
+              label="RPM"
+              value={`${Math.round(latest?.filtered.speed ?? 0)} rpm`}
             />
           </div>
         </DashboardCard>
@@ -413,26 +462,44 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
 function DashboardCard({
   title,
+  currentValue = "0.0 mph",
   className = "",
   children,
 }: {
   title?: string;
   className?: string;
+  currentValue?: string;
   children: ReactNode;
 }) {
   return (
     <section
-      className={`flex min-h-0 flex-col overflow-hidden rounded-[1.25rem] border border-white/8 bg-[linear-gradient(180deg,rgba(32,44,56,0.96),rgba(16,24,32,0.98))] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] ${className}`}
+      className={`flex min-h-0 flex-col overflow-hidden rounded-[1.25rem] border border-white/8 bg-[linear-gradient(180deg,#242424,#252525)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] ${className}`}
     >
       {title ? (
         <div className="mb-2 flex items-center justify-between text-left">
           <h2 className="text-sm font-semibold uppercase tracking-[0.26em] text-white/78">
             {title}
           </h2>
+          <div className="pointer-events-none absolute right-3 top-1 z-10 rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
+            {currentValue}
+          </div>
         </div>
       ) : null}
       {children}
     </section>
+  );
+}
+
+function SignalTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex min-h-0 flex-col justify-between rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5 text-left">
+      <div className="text-[11px] uppercase tracking-[0.18em] text-white/42">
+        {label}
+      </div>
+      <div className="mt-2 text-lg font-semibold leading-tight text-white xl:text-xl">
+        {value}
+      </div>
+    </div>
   );
 }
 
@@ -487,7 +554,7 @@ function CompactChart({
 
   return (
     <div className="relative flex h-full min-h-0 flex-1">
-      <div className="pointer-events-none absolute right-3 top-1 z-10 rounded-full border border-white/10 bg-black/55 px-2.5 py-1 text-xs font-medium text-white/88">
+      <div className="pointer-events-none absolute right-3 top-1 z-10 rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
         {currentValue}
       </div>
       <LineChart
@@ -503,10 +570,11 @@ function CompactChart({
             scaleType: "point",
             data: labels,
             height: 16,
+            disableTicks: true,
             tickLabelInterval: (_, index) => index % 20 === 0,
           },
         ]}
-        yAxis={[{ min: 0, max: yMax, width: 30 }]}
+        yAxis={[{ min: 0, max: yMax, width: 30, disableTicks: true }]}
         series={[
           {
             data,
@@ -552,10 +620,10 @@ function GaugePointer() {
   };
   return (
     <g>
-      <circle cx={cx} cy={cy} r={5} fill="#fb923c" />
+      <circle cx={cx} cy={cy} r={5} fill="#c41e3a" />
       <path
         d={`M ${cx} ${cy} L ${target.x} ${target.y}`}
-        stroke="#fb923c"
+        stroke="#c41e3a"
         strokeWidth={3}
       />
     </g>
@@ -680,10 +748,15 @@ function formatValue(value: number, decimals: number): string {
 
 function formatEfficiency(value: number | null): string {
   if (value === null || !Number.isFinite(value)) {
-    return "--";
+    return "0.00 mi/kWh";
   }
 
   return `${value.toFixed(2)} mi/kWh`;
+}
+
+function formatThrottle(value: number): string {
+  const normalized = Math.abs(value) <= 1 ? value * 100 : value;
+  return formatValue(normalized, 0);
 }
 
 function roundTo(value: number, decimals: number): number {
