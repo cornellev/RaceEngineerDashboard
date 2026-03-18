@@ -9,6 +9,7 @@ import {
 } from "@mui/x-charts/Gauge";
 import MapComponent from "../components/MapComponent";
 import type { SocketData } from "../utils/Socket";
+import { LinearProgress } from "@mui/material";
 
 const HISTORY_LIMIT = 1200;
 const SPEEDOMETER_MAX_MPH = 30;
@@ -424,7 +425,12 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             <SignalTile
               label="Brake"
               value={formatValue(latest?.steering.brake_pressure ?? 0, 1)}
-            />
+            >
+              <LinearProgress
+                variant="determinate"
+                value={latest?.steering.brake_pressure ?? 40}
+              />
+            </SignalTile>
             <SignalTile
               label="Steer"
               value={`${formatValue(latest?.steering.turn_angle ?? 0, 1)} deg`}
@@ -432,11 +438,31 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             <SignalTile
               label="Throttle"
               value={`${formatThrottle(latest?.motor.throttle ?? 0)}%`}
-            />
-            <SignalTile
-              label="RPM"
-              value={`${Math.round(latest?.filtered.speed ?? 0)} rpm`}
-            />
+            >
+              <div className="h-full">
+                <VerticalThrottle value={latest?.motor.throttle ?? 67} />
+              </div>
+            </SignalTile>
+            <SignalTile label="RPM">
+              <div className="h-9/10 grid grid-rows-2 grid-cols-2 gap-3">
+                <SignalTile
+                  label="FL"
+                  value={`${latest?.rpm_front.rpm_left ?? 0}`}
+                />
+                <SignalTile
+                  label="FR"
+                  value={`${latest?.rpm_front.rpm_right ?? 0}`}
+                />
+                <SignalTile
+                  label="BL"
+                  value={`${latest?.rpm_back.rpm_left ?? 0}`}
+                />
+                <SignalTile
+                  label="BR"
+                  value={`${latest?.rpm_back.rpm_right ?? 0}`}
+                />
+              </div>
+            </SignalTile>
           </div>
         </DashboardCard>
 
@@ -490,15 +516,26 @@ function DashboardCard({
   );
 }
 
-function SignalTile({ label, value }: { label: string; value: string }) {
+function SignalTile({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: string;
+  children?: ReactNode;
+}) {
   return (
     <div className="flex min-h-0 flex-col justify-between rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5 text-left">
       <div className="text-[11px] uppercase tracking-[0.18em] text-white/42">
         {label}
       </div>
-      <div className="mt-2 text-lg font-semibold leading-tight text-white xl:text-xl">
-        {value}
-      </div>
+      {children}
+      {value ? (
+        <div className="mt-2 text-lg font-semibold leading-tight text-white xl:text-xl">
+          {value}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -627,6 +664,31 @@ function GaugePointer() {
         strokeWidth={3}
       />
     </g>
+  );
+}
+
+function VerticalThrottle({ value }: { value: number }) {
+  return (
+    <div
+      style={{
+        width: 120,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <LinearProgress
+        variant="determinate"
+        value={value}
+        sx={{
+          height: 30,
+          width: "100%", // becomes height after rotation
+          transform: "translateX(-90px) rotate(-90deg)",
+          transformOrigin: "bottom right",
+          borderRadius: "10px",
+        }}
+      />
+    </div>
   );
 }
 
