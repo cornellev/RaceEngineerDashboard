@@ -11,7 +11,6 @@ import {
 import MapComponent from "../components/MapComponent";
 import type { SocketData } from "../utils/Socket";
 import { LinearProgress } from "@mui/material";
-import { Sampler } from "@react-three/drei";
 
 const HISTORY_LIMIT = 1200;
 const SPEEDOMETER_MAX_MPH = 40;
@@ -342,11 +341,6 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 Math.max(0, Math.min(latestSpeed, SPEEDOMETER_MAX_MPH)) *
                 (100 / SPEEDOMETER_MAX_MPH)
               }
-              sx={() => ({
-                [`& .${gaugeClasses.referenceArc}`]: {
-                  fill: "rgba(255,255,255,0.16)",
-                },
-              })}
             >
               <GaugeReferenceArc />
               <GaugePointer />
@@ -510,7 +504,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         {history.length > 0 ? (
           <CompactChart
             accentColor="#fb923c"
-            currentValue={`${formatValue(latestSpeed * 2.23694, 1)} mph`}
+            currentValue={`${formatValue(latestSpeed, 1)} mph`}
             data={speedHistory.map((speed) => roundTo(speed * 2.23694, 1))}
             labels={xAxisLabels}
             yMax={Math.max(
@@ -558,10 +552,10 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 endAngle={110}
                 sx={{
                   [`& .${gaugeClasses.referenceArc}`]: {
-                    fill: "#A7CAED",
+                    fill: "#48657C",
                   },
                   [`& .${gaugeClasses.valueArc}`]: {
-                    fill: "#1976D2",
+                    fill: "#90CAF9",
                   },
                   [`& .${gaugeClasses.valueText}`]: {
                     fontFamily: "Chivo Mono",
@@ -586,10 +580,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           >
             <div className="h-full">
               <VerticalThrottle
-                value={Math.min(
-                  latest?.motor.throttle ? latest.motor.throttle * 100 : 0,
-                  100,
-                )}
+                value={Math.min(latest.motor.throttle ?? 0, 100)}
               />
             </div>
           </SignalTile>
@@ -755,6 +746,8 @@ function CompactChart({
             height: 16,
             tickLabelInterval: (_, index) => index % 20 === 0,
             tickInterval: (_, index) => index % 20 === 0,
+            disableLine: true,
+            disableTicks: true,
           },
         ]}
         yAxis={[{ min: 0, max: yMax, width: 30, disableTicks: true }]}
@@ -764,12 +757,14 @@ function CompactChart({
             color: accentColor,
             showMark: false,
             area: true,
+            valueFormatter: (value) => `${value} ${currentValue.split(" ")[1]}`,
           },
           {
             data: latestPointOnly,
             color: accentColor,
             showMark: true,
             curve: "linear",
+            valueFormatter: () => null,
           },
         ]}
         sx={{
@@ -782,6 +777,15 @@ function CompactChart({
           },
           "& .MuiAreaElement-root": {
             fillOpacity: 0.2,
+          },
+        }}
+        slotProps={{
+          tooltip: {
+            sx: {
+              "& .MuiChartsTooltip-table": {
+                backgroundColor: "#1e1e1e",
+              },
+            },
           },
         }}
         skipAnimation

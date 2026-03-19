@@ -1,13 +1,38 @@
 import Header from "./components/Header";
 import Home from "./pages/Home";
 import Data from "./pages/Data";
-import RaceGPT from "./pages/RaceGPT";
 import SideBar from "./components/SideBar";
 
 import socket from "./utils/Socket";
 import type { SocketData } from "./utils/Socket";
 
 import { useState, useEffect } from "react";
+
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+    background: {
+      default: "#242424",
+    },
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          "&.MuiChartsTooltip-paper": {
+            backgroundColor: "#1e1e1e",
+            borderRadius: "8px",
+            border: "1px solid #555",
+            backgroundImage: "none",
+          },
+        },
+      },
+    },
+  },
+});
 
 function App() {
   const [page, setPage] = useState("data");
@@ -38,7 +63,8 @@ function App() {
   }, []);
 
   return (
-    <>
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
       <Header setPage={setPage} setSideBar={setSideBar} sideBar={sideBar} />
       <div className="w-screen h-[max(7.5vh,67px)] mx-auto px-4 sm:px-6 lg:px-8" />
       <SideBar open={sideBar} />
@@ -47,7 +73,7 @@ function App() {
       >
         {getPageComponent()}
       </main>
-    </>
+    </ThemeProvider>
   );
 }
 
