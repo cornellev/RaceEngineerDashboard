@@ -447,7 +447,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           >
             <LinearProgress
               variant="determinate"
-              value={latest?.steering.brake_pressure ?? 2}
+              value={Math.min(latest?.steering.brake_pressure ?? 2, 100)}
               sx={{
                 height: 10,
                 borderRadius: 2,
@@ -652,7 +652,6 @@ function CompactChart({
         grid={{ horizontal: true }}
         disableAxisListener
         disableLineItemHighlight
-        axisHighlight={{ x: "none", y: "none" }}
         slotProps={{ tooltip: { trigger: "none" } }}
         xAxis={[
           {
@@ -732,7 +731,7 @@ function VerticalThrottle({ value }: { value: number }) {
     >
       <LinearProgress
         variant="determinate"
-        value={value}
+        value={Math.min(value, 100)}
         sx={{
           height: 30,
           width: "100%", // becomes height after rotation
