@@ -69,7 +69,16 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   const latestSpeed = (latest?.filtered.speed ?? 0) * 2.23694;
   const latestPowerKw = latest ? calculatePowerKilowatts(latest) : 0;
   const instantEfficiency = latest ? calculateEfficiency(latest) : null;
-  const [warn, setWarn] = useState<boolean>(false);
+  const [warn, setWarn] = useState<{
+    value: boolean;
+    message: string;
+    timerId: number | null;
+  }>({
+    value: false,
+    message: "",
+    timerId: null,
+  });
+  const [disabled, setDisabled] = useState<number | null>(null);
   const [runSession, setRunSession] = useState<RunSessionState>({
     startTimestamp: null,
     isRunning: false,
@@ -208,12 +217,41 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   }, [data, runSession.isRunning, runSession.lastProcessedTimestamp]);
 
   const toggleRunTracking = async () => {
+    if (disabled) clearTimeout(disabled);
+    setDisabled(
+      setTimeout(() => {
+        setDisabled(null);
+      }, 4000),
+    );
+
+    if (disabled) {
+      const warnMessage = "Stop spamming the fucking buton";
+      console.warn(warnMessage);
+      if (warn.timerId) clearTimeout(warn.timerId);
+      setWarn({
+        value: true,
+        message: warnMessage,
+        timerId: setTimeout(() => {
+          setWarn((prev) => {
+            return { ...prev, value: false, timerId: null };
+          });
+        }, 1000),
+      });
+      return;
+    }
+
     if (latestTimestamp === null && !runSession.isRunning) {
       console.warn("Cannot start run tracking without any telemetry data");
-      setWarn(true);
-      setTimeout(() => {
-        setWarn(false);
-      }, 1000);
+      if (warn.timerId) clearTimeout(warn.timerId);
+      setWarn({
+        value: true,
+        message: "No data to record",
+        timerId: setTimeout(() => {
+          setWarn((prev) => {
+            return { ...prev, value: false, timerId: null };
+          });
+        }, 1000),
+      });
       return;
     }
 
@@ -427,9 +465,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             </strong>
             {runSession.isRunning ? null : (
               <p
-                className={`transition-opacity duration-1000 ease-in-out ${warn ? "opacity-100" : "opacity-0"}`}
+                className={`transition-opacity duration-1000 ease-in-out ${warn.value ? "opacity-100" : "opacity-0"}`}
               >
-                No data to record
+                {warn.message}
               </p>
             )}
             <div>
