@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { TextField, Switch, Button } from "@mui/material";
 import socket from "../utils/Socket";
 
@@ -7,30 +7,10 @@ export default function SideBar({ open }: { open: boolean }) {
   const [button, setButton] = useState(true);
   const [textValue, setTextValue] = useState("10");
   const [frequency, setFrequency] = useState(10);
+  const [intervalID, setIntervalID] = useState(-1);
   const [response, setResponse] = useState<string[]>([]);
-  const requestInFlightRef = useRef(false);
-  const cooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const setManualCooldown = () => {
-    setButton(false);
-
-    if (cooldownTimeoutRef.current) {
-      clearTimeout(cooldownTimeoutRef.current);
-    }
-
-    cooldownTimeoutRef.current = setTimeout(() => {
-      setButton(true);
-      cooldownTimeoutRef.current = null;
-    }, 5000);
-  };
 
   const getResponse = async () => {
-    if (requestInFlightRef.current) {
-      return;
-    }
-
-    requestInFlightRef.current = true;
-
     try {
       const response = await fetch("http://localhost:8000/racegpt", {
         method: "POST",
@@ -51,61 +31,34 @@ export default function SideBar({ open }: { open: boolean }) {
         `${prev.length + 1}. Error: RaceGPT failed to respond`,
       ]);
       console.error("Error:", error);
-    } finally {
-      requestInFlightRef.current = false;
     }
   };
 
   const handleClick = async () => {
-    setManualCooldown();
-    await getResponse();
+    setButton(false);
+    setTimeout(() => {
+      setButton(true);
+    }, 5000);
+
+    getResponse();
   };
 
   const handleToggle = () => {
     setManual((prev) => !prev);
-  };
 
-  useEffect(() => {
     if (manual) {
-      return;
-    }
-
-    let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    const runLoop = async () => {
-      if (cancelled) {
-        return;
-      }
-
-      await getResponse();
-
-      if (cancelled) {
-        return;
-      }
-
-      timeoutId = setTimeout(() => {
-        void runLoop();
+      const id = setInterval(() => {
+        getResponse();
       }, frequency * 1000);
-    };
-
-    void runLoop();
-
-    return () => {
-      cancelled = true;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [manual, frequency]);
-
-  useEffect(() => {
-    return () => {
-      if (cooldownTimeoutRef.current) {
-        clearTimeout(cooldownTimeoutRef.current);
-      }
-    };
-  }, []);
+      setIntervalID(id);
+    } else if (intervalID != -1) {
+      clearInterval(intervalID);
+      setButton(false);
+      setTimeout(() => {
+        setButton(true);
+      }, 5000);
+    }
+  };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const text = event.target.value;
@@ -130,7 +83,7 @@ export default function SideBar({ open }: { open: boolean }) {
         </h2>
         <div className="flex items-center gap-2 mt-4">
           <p>Manual</p>
-          <Switch checked={!manual} onChange={handleToggle} />
+          <Switch onChange={handleToggle} />
           <p>Auto</p>
         </div>
       </div>

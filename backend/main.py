@@ -16,7 +16,6 @@ import httpx
 
 DEQUE_SIZE = 1000 # for snapshot
 SAMPLE_RATE_HZ = 40  # rate at which we send data to frontend
-RACEGPT_REQUEST_TIMEOUT_SEC = float(os.getenv("RACEGPT_REQUEST_TIMEOUT_SEC", "20"))
 
 def sanitize_json(x):
     if isinstance(x, float):
@@ -160,8 +159,6 @@ async def lifespan(app: FastAPI):
         app.state.broadcaster_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await app.state.broadcaster_task
-
-        await racegpt_module.close()
         
         app.state.node.destroy_node()
         rclpy.shutdown()
@@ -207,12 +204,10 @@ async def racegpt(data: dict):
             print("called race-gpt...",flush=True)
             response = await asyncio.wait_for(
                 racegpt_module.get_response(data),
-                timeout=RACEGPT_REQUEST_TIMEOUT_SEC
+                timeout=20000
             )
         except asyncio.TimeoutError:
             raise HTTPException(status_code=504, detail="RaceGPT device did not respond")
-        except RuntimeError as exc:
-            raise HTTPException(status_code=502, detail="RaceGPT websocket request failed") from exc
 
     return response
 
