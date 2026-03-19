@@ -15,7 +15,7 @@ import racegpt as racegpt_module
 import httpx
 
 DEQUE_SIZE = 1000 # for snapshot
-SAMPLE_RATE_HZ = 100  # rate at which we send data to frontend
+SAMPLE_RATE_HZ = 40  # rate at which we send data to frontend
 
 def sanitize_json(x):
     if isinstance(x, float):
