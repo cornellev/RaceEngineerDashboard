@@ -2,7 +2,7 @@
 
 **Donte and Adi**
 
-<img width="720" height="379" alt="img_0368_720" src="https://github.com/user-attachments/assets/fdf21e5b-6bb1-46a8-bd15-c7683db6cf0a" />
+![Live Dashboard Image](frontend/public/dashboard.png)
 
 ---
 
