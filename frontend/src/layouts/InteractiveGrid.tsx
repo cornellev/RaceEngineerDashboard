@@ -11,6 +11,7 @@ import {
 import MapComponent from "../components/MapComponent";
 import type { SocketData } from "../utils/Socket";
 import { LinearProgress } from "@mui/material";
+import { Sampler } from "@react-three/drei";
 
 const HISTORY_LIMIT = 1200;
 const SPEEDOMETER_MAX_MPH = 40;
@@ -112,9 +113,12 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   const powerHistory = history.map((sample) =>
     roundTo(calculatePowerKilowatts(sample), 2),
   );
-  const xAxisLabels = history.map((sample) =>
-    formatElapsed(history[0]?.global_ts ?? sample.global_ts, sample.global_ts),
-  );
+  const xAxisLabels = history.map((sample) => {
+    return formatElapsed(
+      sample.global_ts,
+      history[history.length - 1]?.global_ts ?? sample.global_ts,
+    );
+  });
   useEffect(() => {
     if (!runSession.isRunning || runSession.lastProcessedTimestamp === null) {
       return;
@@ -509,7 +513,10 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             currentValue={`${formatValue(latestSpeed * 2.23694, 1)} mph`}
             data={speedHistory.map((speed) => roundTo(speed * 2.23694, 1))}
             labels={xAxisLabels}
-            yMax={Math.max(30, Math.ceil((latestSpeed * 2.23694) / 10) * 10)}
+            yMax={Math.max(
+              SPEEDOMETER_MAX_MPH,
+              Math.ceil((latestSpeed * 2.23694) / 10) * 10,
+            )}
           />
         ) : (
           <EmptyTelemetryState compact />
@@ -619,6 +626,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             currentValue={`${formatValue(latestPowerKw, 2)} kW`}
             data={powerHistory}
             labels={xAxisLabels}
+            yMax={4.5}
           />
         ) : (
           <EmptyTelemetryState compact />
@@ -740,13 +748,13 @@ function CompactChart({
         margin={{ top: 8, right: 8, bottom: 10, left: 10 }}
         height={220}
         grid={{ horizontal: true }}
-        slotProps={{ tooltip: { trigger: "none" } }}
         xAxis={[
           {
             scaleType: "point",
             data: labels,
             height: 16,
             tickLabelInterval: (_, index) => index % 20 === 0,
+            tickInterval: (_, index) => index % 20 === 0,
           },
         ]}
         yAxis={[{ min: 0, max: yMax, width: 30, disableTicks: true }]}
