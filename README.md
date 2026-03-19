@@ -14,7 +14,7 @@
 - Timeseries charts of the last 10 seconds of live data for applicable sensors
 - Implementing a Kalman filter for accurate location data, and a low pass filter
   for denoising timeseries sensors.
-- Max values for applicable sensors such as power and battery efficiency
+- Max values for applicable sensors such as speed and instantaneous battery efficiency
 - Timestamping and stopwatch features for tracking lap and race time
 - Implement automatic mode switching between ROS subscriber and cellular modem
   sensor data channels
@@ -37,7 +37,7 @@ healthcheck endpoint on the root of port 8000.
 
 Integration with RaceGPT is done via serial connection.
 
-# ros subscriber
+# ROS Subscriber Data
 
 For the ROS2 subscriber, first get the ROS2 publisher IP address from:
 
@@ -48,5 +48,3 @@ ssh cev@<daq tailscale ip> "docker exec ts-authkey-container tailscale ip" | hea
 Make sure this matches the ip in the `docker-compose.yml` file.
 
 We set it manually, not via env var, because the publisher IP should not change.
-
-
