@@ -13,7 +13,7 @@ import type { SocketData } from "../utils/Socket";
 import { LinearProgress } from "@mui/material";
 
 const HISTORY_LIMIT = 1200;
-const SPEEDOMETER_MAX_MPH = 30;
+const SPEEDOMETER_MAX_MPH = 40;
 const TIMESTAMP_UNITS_PER_SECOND = 1e6;
 const HOURS_PER_SECOND = 1 / 3600;
 const METERS_PER_MILE = 1609.344;
@@ -97,7 +97,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       ? runDistanceMiles / runSession.energyKilowattHours
       : null;
 
-  const speedHistory = history.map((sample) => roundTo(sample.gps.speed, 1));
+  const speedHistory = history.map((sample) =>
+    roundTo(sample.filtered.speed, 1),
+  );
   const powerHistory = history.map((sample) =>
     roundTo(calculatePowerKilowatts(sample), 2),
   );
@@ -267,6 +269,20 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
     }
   };
 
+  const handleLap = () => {
+    setRunSession((previous) => {
+      let lapTimes = [
+        ...previous.lapTimes,
+        runSession.lastProcessedTimestamp ?? 0,
+      ];
+
+      return {
+        ...previous,
+        lapTimes,
+      };
+    });
+  };
+
   return (
     <div className="grid min-h-full w-full text-white grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(100,0.9fr)_minmax(100,1fr)] m-0 px-3 pt-2 pb-3.5 sm:px-4 lg:px-5">
       <DashboardCard
@@ -280,7 +296,10 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               height={180}
               startAngle={-110}
               endAngle={110}
-              value={Math.max(0, Math.min(latestSpeed, SPEEDOMETER_MAX_MPH))}
+              value={
+                Math.max(0, Math.min(latestSpeed, SPEEDOMETER_MAX_MPH)) *
+                (100 / SPEEDOMETER_MAX_MPH)
+              }
               sx={() => ({
                 [`& .${gaugeClasses.referenceArc}`]: {
                   fill: "rgba(255,255,255,0.16)",
@@ -307,7 +326,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                   ? `${formatValue(runSession.lastSpeed * 2.23694, 1)} mph`
                   : "--"
               }
-              helper={`${runSession.isRunning ? "mph" : "Recorder idle"}`}
+              helper={`${runSession.isRunning ? "Recorder Active" : "start recording to track"}`}
             />
           </div>
         </div>
@@ -317,7 +336,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         className="min-h-42.5 lg:col-span-5 lg:row-start-1"
         title="Run Summary"
       >
-        <div className="flex h-full flex-col justify-between gap-3">
+        <div className="flex h-full flex-col justify-between">
           <div className="grid grid-cols-2 gap-2">
             <MetricPanel
               label="Instant Efficiency"
@@ -333,7 +352,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                   ? instantEfficiency >= 100
                     ? `${formatEfficiency(instantEfficiency)}`
                     : "mi/kWh"
-                  : "no data to display"
+                  : "no data to record"
               }
             />
             <MetricPanel
@@ -379,34 +398,57 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 runSession.startTimestamp !== null
                   ? runSession.isRunning
                     ? "trapezoid estimate"
-                    : "power integral pending"
+                    : "last recorded run"
                   : "start recording to track"
               }
             />
           </div>
           {runSession.lapTimes.length >= 1 ? (
-            <div className="flex justify-between">Lap Times</div>
+            <div className="flex justify-start w-full">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.26em] text-white/78">
+                Laps
+              </h2>
+              <div className="flex justify-start flex-row-reverse overflow-x-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {calculateLapTimes(runSession.lapTimes).map((lapTime) => {
+                  return (
+                    <p
+                      className={`text-sm font-semibold uppercase tracking-[0.26em] text-${lapTime.color}-700 ml-3`}
+                    >
+                      {formatRunTimer(0, lapTime.value).slice(0, -2)}{" "}
+                    </p>
+                  );
+                })}
+              </div>
+            </div>
           ) : null}
           <div className="flex items-center justify-between gap-2 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5">
             <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl font-mono">
               {runTimerLabel}
             </strong>
-            <p
-              className={`transition-opacity duration-1000 ease-in-out ${warn ? "opacity-100" : "opacity-0"}`}
-            >
-              No data to record
-            </p>
-            <button
-              type="button"
-              className={`rounded-full focus:outline-0 border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition ${
-                runSession.isRunning
-                  ? "border-[#ef4444] bg-[#ef4444]/12 text-[#ffd0d0] hover:bg-[#ef4444]/18"
-                  : "border-[#22c55e] bg-[#22c55e]/12 text-[#dcffe9] hover:bg-[#22c55e]/18"
-              }`}
-              onClick={toggleRunTracking}
-            >
-              {runSession.isRunning ? "Stop" : "Start"}
-            </button>
+            {runSession.isRunning ? null : (
+              <p
+                className={`transition-opacity duration-1000 ease-in-out ${warn ? "opacity-100" : "opacity-0"}`}
+              >
+                No data to record
+              </p>
+            )}
+            <div>
+              {runSession.isRunning ? (
+                <button
+                  className={`rounded-full focus:outline-0 border px-3 mr-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition`}
+                  onClick={handleLap}
+                >
+                  Lap
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className={`rounded-full focus:outline-0 border px-3 ml-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition`}
+                onClick={toggleRunTracking}
+              >
+                {runSession.isRunning ? "Stop" : "Start"}
+              </button>
+            </div>
           </div>
         </div>
       </DashboardCard>
@@ -443,11 +485,16 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         <div className="grid h-full grid-cols-2 gap-2">
           <SignalTile
             label="Brake"
-            value={formatValue(latest?.steering.brake_pressure ?? 0, 1)}
+            value={`${Math.round(latest?.steering.brake_pressure ?? 0)} PSI`}
           >
             <LinearProgress
               variant="determinate"
-              value={Math.min(latest?.steering.brake_pressure ?? 2, 100)}
+              value={Math.min(
+                latest?.steering.brake_pressure
+                  ? latest.steering.brake_pressure / 6
+                  : 0,
+                100,
+              )}
               sx={{
                 height: 10,
                 borderRadius: 2,
@@ -459,7 +506,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               <Gauge
                 value={
                   latest?.steering.turn_angle
-                    ? 50 - latest.steering.turn_angle
+                    ? 50 + (latest.steering.turn_angle - 1200) / 100
                     : 50
                 }
                 startAngle={-110}
@@ -482,7 +529,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                   },
                 }}
                 text={() =>
-                  `${formatValue(latest?.steering.turn_angle ?? 0, 1)}°`
+                  `${Math.round(latest?.steering.turn_angle ? (latest.steering.turn_angle - 1200) / 100 : 0)}°`
                 }
                 skipAnimation
               />
@@ -493,26 +540,31 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             value={`${formatThrottle(latest?.motor.throttle ?? 0)}%`}
           >
             <div className="h-full">
-              <VerticalThrottle value={latest?.motor.throttle ?? 4} />
+              <VerticalThrottle
+                value={Math.min(
+                  latest?.motor.throttle ? latest.motor.throttle * 100 : 0,
+                  100,
+                )}
+              />
             </div>
           </SignalTile>
           <SignalTile label="RPM">
             <div className="h-9/10 grid grid-rows-2 grid-cols-2 gap-3">
               <SignalTile
                 label="FL"
-                value={`${latest?.rpm_front.rpm_left ?? 0}`}
+                value={`${latest?.rpm_front.rpm_left ? Math.round(latest.rpm_front.rpm_left) : 0}`}
               />
               <SignalTile
                 label="FR"
-                value={`${latest?.rpm_front.rpm_right ?? 0}`}
+                value={`${latest?.rpm_front.rpm_right ? Math.round(latest.rpm_front.rpm_right) : 0}`}
               />
               <SignalTile
                 label="BL"
-                value={`${latest?.rpm_back.rpm_left ?? 0}`}
+                value={`${latest?.rpm_back.rpm_left ? Math.round(latest.rpm_back.rpm_left) : 0}`}
               />
               <SignalTile
                 label="BR"
-                value={`${latest?.rpm_back.rpm_right ?? 0}`}
+                value={`${latest?.rpm_back.rpm_right ? Math.round(latest.rpm_back.rpm_right) : 0}`}
               />
             </div>
           </SignalTile>
@@ -650,15 +702,12 @@ function CompactChart({
         margin={{ top: 8, right: 8, bottom: 10, left: 10 }}
         height={220}
         grid={{ horizontal: true }}
-        disableAxisListener
-        disableLineItemHighlight
         slotProps={{ tooltip: { trigger: "none" } }}
         xAxis={[
           {
             scaleType: "point",
             data: labels,
             height: 16,
-            disableTicks: true,
             tickLabelInterval: (_, index) => index % 20 === 0,
           },
         ]}
@@ -756,6 +805,19 @@ function calculateEfficiency(sample: SocketData): number | null {
   }
 
   return (sample.filtered.speed * 2.23694) / powerKw;
+}
+
+function calculateLapTimes(
+  lapTimestamps: number[],
+): { value: number; color: string }[] {
+  if (lapTimestamps.length === 0) return [];
+  let lapTimes = [{ value: lapTimestamps[0], color: "gray" }];
+  for (let i = 1; i < lapTimestamps.length; i++) {
+    const value = lapTimestamps[i] - lapTimestamps[i - 1];
+    const color = value > lapTimes[lapTimes.length - i].value ? "green" : "red";
+    lapTimes = [{ value: value, color: color }, ...lapTimes];
+  }
+  return lapTimes;
 }
 
 function calculateLocalTangentDistanceMeters(

@@ -53,21 +53,21 @@ h1 {
 
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
+  border: 2px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
   background-color: #242424;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: border-color 0.25s ease-in;
+  transition: background-color 0.15s ease-in-out;
 }
 button:hover {
   border-color: var(--primary-accent);
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+button:active {
+  background-color: var(--primary-accent);
 }
 
 @media (prefers-color-scheme: light) {

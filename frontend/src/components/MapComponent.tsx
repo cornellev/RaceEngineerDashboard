@@ -53,7 +53,10 @@ const MapComponent = ({
           mapTypeControl={false}
           fullscreenControl={false}
           defaultHeading={90}
-          options={{ heading: 90, mapId: mapId }}
+          options={{
+            heading: 90,
+            mapId: mapId,
+          }}
           mapId={mapId}
         >
           <AdvancedMarker position={position}>
