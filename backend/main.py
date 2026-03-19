@@ -201,9 +201,10 @@ racegpt_lock = asyncio.Lock()
 async def racegpt(data: dict):
     async with racegpt_lock:
         try:
+            print("called race-gpt...",flush=True)
             response = await asyncio.wait_for(
                 racegpt_module.get_response(data),
-                timeout=20
+                timeout=20000
             )
         except asyncio.TimeoutError:
             raise HTTPException(status_code=504, detail="RaceGPT device did not respond")

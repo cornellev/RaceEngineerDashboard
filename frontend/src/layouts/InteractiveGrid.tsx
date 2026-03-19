@@ -472,7 +472,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                     fill: "#1976D2",
                   },
                   [`& .${gaugeClasses.valueText}`]: {
-                    fontFamily: "monospace",
+                    fontFamily: "Chivo Mono",
                     fontWeight: 500,
                     fontSize: 22,
                     transform: "translate(0px, 0px)",

@@ -8,7 +8,7 @@ export default function SideBar({ open }: { open: boolean }) {
   const [textValue, setTextValue] = useState("10");
   const [frequency, setFrequency] = useState(10);
   const [intervalID, setIntervalID] = useState(-1);
-  const [response, setResponse] = useState("Nothing to see here.");
+  const [response, setResponse] = useState<string[]>([]);
 
   const getResponse = async () => {
     try {
@@ -23,9 +23,13 @@ export default function SideBar({ open }: { open: boolean }) {
       }
 
       const result = await response.json();
-      setResponse((prev) => prev + "\n" + result.verdict);
+      setResponse((prev) => [...prev, `${prev.length + 1}. ${result.verdict}`]);
       console.log("Success:", result);
     } catch (error) {
+      setResponse((prev) => [
+        ...prev,
+        `${prev.length + 1}. Error: RaceGPT failed to respond`,
+      ]);
       console.error("Error:", error);
     }
   };
@@ -83,7 +87,13 @@ export default function SideBar({ open }: { open: boolean }) {
           <p>Auto</p>
         </div>
       </div>
-      <p className="text-wrap">{response}</p>
+      <div className="h-full w-full">
+        {response.length == 0
+          ? "Nothing to see here"
+          : response.map((res) => {
+              return <p className="text-wrap">{res}</p>;
+            })}
+      </div>
       {manual ? (
         button ? (
           <Button
