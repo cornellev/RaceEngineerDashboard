@@ -112,7 +112,7 @@ As mentioned above, there are two modes for requesting responses on the sidebar.
 - Manually request LLM responses (5s buffer between responses)
 - Automatically request and display LLM responses based on a set frequency >5s
 
-## 🏗️ Design and Architecture
+# 🏗️ Design and Architecture
 
 The Race Engineer Dashboard is built as a **real-time, distributed system** with a clear separation between data ingestion, processing, and visualization. The architecture is designed to prioritize **low-latency streaming**, **fault tolerance**, and **modular extensibility**.
 
