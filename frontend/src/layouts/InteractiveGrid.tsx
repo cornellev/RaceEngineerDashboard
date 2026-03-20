@@ -330,8 +330,8 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         className="min-h-42.5 lg:col-span-3 lg:row-start-1"
         title="Speed"
       >
-        <div className="flex h-full flex-col justify-end">
-          <div className="flex h-1/2 items-center justify-between gap-3">
+        <div className="flex h-full flex-col justify-end gap-0 xl:gap-3">
+          <div className="flex flex-wrap items-center justify-center">
             <GaugeContainer
               width={180}
               height={180}
@@ -341,11 +341,12 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 Math.max(0, Math.min(latestSpeed, SPEEDOMETER_MAX_MPH)) *
                 (100 / SPEEDOMETER_MAX_MPH)
               }
+              sx={{ flexWrap: "wrap" }}
             >
               <GaugeReferenceArc />
               <GaugePointer />
             </GaugeContainer>
-            <div className="flex min-w-0 flex-1 flex-col items-end text-right">
+            <div className="flex flex-1 flex-col xl:items-end text-right items-center mb-3">
               <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl font-mono">
                 {formatValue(latestSpeed, 1)}
               </strong>
@@ -457,13 +458,13 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               </div>
             </div>
           ) : null}
-          <div className="flex items-center justify-between gap-2 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5">
-            <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl font-mono">
+          <div className="flex items-center justify-between gap-0 sm:gap-2 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5">
+            <strong className="text-3xl font-semibold leading-none text-white sm:5xl xl:text-6xl font-mono">
               {runTimerLabel}
             </strong>
             {runSession.isRunning ? null : (
               <p
-                className={`transition-opacity duration-1000 ease-in-out ${warn.value ? "opacity-100" : "opacity-0"}`}
+                className={`transition-opacity whitespace-nowrap hidden overflow-x-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:block duration-1000 ease-in-out ${warn.value ? "opacity-100" : "opacity-0"}`}
               >
                 {warn.message}
               </p>
@@ -580,7 +581,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           >
             <div className="h-full">
               <VerticalThrottle
-                value={Math.min(latest.motor.throttle ?? 0, 100)}
+                value={Math.min(latest?.motor.throttle ?? 0, 100)}
               />
             </div>
           </SignalTile>
@@ -822,7 +823,7 @@ function VerticalThrottle({ value }: { value: number }) {
     <div
       style={{
         width: 120,
-        marginTop: "0.7vh",
+        marginTop: "min(0.7vh,0.4vw)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

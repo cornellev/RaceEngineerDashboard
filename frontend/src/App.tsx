@@ -69,7 +69,7 @@ function App() {
       <div className="w-screen h-[max(7.5vh,67px)] mx-auto px-4 sm:px-6 lg:px-8" />
       <SideBar open={sideBar} />
       <main
-        className={`${sideBar ? "w-[80%]" : "w-screen"} h-fit transition-all duration-300 ease-in-out m-0 p-0`}
+        className={`${sideBar ? "xl:w-[80%]" : "w-screen"} h-fit transition-all duration-300 ease-in-out m-0 p-0`}
       >
         {getPageComponent()}
       </main>
