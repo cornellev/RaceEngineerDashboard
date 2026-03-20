@@ -331,7 +331,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         title="Speed"
       >
         <div className="flex h-full flex-col justify-end gap-0 xl:gap-3">
-          <div className="flex flex-wrap items-center justify-center">
+          <div className="flex flex-wrap xl:flex-nowrap items-center justify-center">
             <GaugeContainer
               width={180}
               height={180}
@@ -347,7 +347,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               <GaugePointer />
             </GaugeContainer>
             <div className="flex flex-1 flex-col xl:items-end text-right items-center mb-3">
-              <strong className="text-5xl font-semibold leading-none text-white xl:text-6xl font-mono">
+              <strong className="text-5xl font-semibold leading-none text-white 2xl:text-6xl font-mono">
                 {formatValue(latestSpeed, 1)}
               </strong>
               <span className="mt-1 text-sm uppercase tracking-[0.2em] text-white/55">
@@ -464,7 +464,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             </strong>
             {runSession.isRunning ? null : (
               <p
-                className={`transition-opacity whitespace-nowrap hidden overflow-x-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:block duration-1000 ease-in-out ${warn.value ? "opacity-100" : "opacity-0"}`}
+                className={`transition-opacity wrap text-center hidden overflow-x-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:block duration-1000 ease-in-out ${warn.value ? "opacity-100" : "opacity-0"}`}
               >
                 {warn.message}
               </p>
