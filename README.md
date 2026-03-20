@@ -31,7 +31,7 @@ Timestamping and stopwatch features for tracking lap and race time ⌚
 Implement automatic mode switching between ROS subscriber and cellular modem sensor
 data channels for reliable data pipeline.
 
-## 🚀 Getting Started
+### 🚀 Getting Started
 
 1. **Running the Project**
 
@@ -89,7 +89,7 @@ data channels for reliable data pipeline.
 
    Refer to `backend/README.md`.
 
-## 🤖 ROS Subscriber Data
+### 🤖 ROS Subscriber Data
 
 For the ROS2 subscriber, first get the ROS2 publisher IP address from:
 
@@ -101,7 +101,7 @@ Make sure this matches the ip in the `docker-compose.yml` file.
 
 We set it manually, not via env var, because the publisher IP should not change.
 
-## 💬 RaceGPT Integration
+### 💬 RaceGPT Integration
 
 Plug your machine into another machine running **RaceGPT** via USB.
 The Race Engineer Dashboard should be connected and able to request
