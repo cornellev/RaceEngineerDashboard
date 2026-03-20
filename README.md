@@ -130,8 +130,8 @@ At a high level, the system follows a streaming pipeline:
 
 ```
 ROS2 Sensors → Backend (Python) → WebSocket Stream → Frontend (React)
-                                                        ↓
-                                                RaceGPT Integration
+                                          ↓
+                                  RaceGPT Integration
 ```
 
 ---
