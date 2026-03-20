@@ -6,7 +6,7 @@
 
 ---
 
-## ✅ Specifications
+### ✅ Specifications
 
 **Sensor Data** displays 📈  
 Implement a Kalman filter for accurate location data, and a low pass filter for denoising timeseries sensors.
@@ -30,6 +30,8 @@ Implement a Kalman filter for accurate location data, and a low pass filter for 
 Timestamping and stopwatch features for tracking lap and race time ⌚  
 Implement automatic mode switching between ROS subscriber and cellular modem sensor
 data channels for reliable data pipeline.
+
+---
 
 ### 🚀 Getting Started
 
@@ -88,6 +90,8 @@ data channels for reliable data pipeline.
 3. **Backend Troubleshooting**
 
    Refer to `backend/README.md`.
+
+---
 
 ### 🤖 ROS Subscriber Data
 
