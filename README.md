@@ -8,7 +8,7 @@
 
 ## ✅ Specifications
 
-**Sensor Data** displays  
+**Sensor Data** displays 📈  
 Implement a Kalman filter for accurate location data, and a low pass filter for denoising timeseries sensors.
 
 - **Speed** time series, live, and max value
@@ -27,7 +27,7 @@ Implement a Kalman filter for accurate location data, and a low pass filter for 
 - Manually request LLM responses (5s buffer between responses)
 - Automatically request and display LLM responses based on set frequency >5s
 
-Timestamping and stopwatch features for tracking lap and race time  
+Timestamping and stopwatch features for tracking lap and race time ⌚  
 Implement automatic mode switching between ROS subscriber and cellular modem sensor
 data channels for reliable data pipeline.
 
