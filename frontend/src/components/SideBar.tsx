@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { TextField, Switch, Button } from "@mui/material";
 import socket from "../utils/Socket";
 
 export default function SideBar({ open }: { open: boolean }) {
-  const [manual, setManual] = useState(true);
-  const [button, setButton] = useState(true);
-  const [textValue, setTextValue] = useState("10");
-  const [frequency, setFrequency] = useState(10);
+  const [manual, setManual] = useState<boolean>(true);
+  const [button, setButton] = useState<boolean>(true);
+  const [textValue, setTextValue] = useState<string>("10");
+  const [frequency, setFrequency] = useState<number>(10);
   const [response, setResponse] = useState<string[]>([]);
-  const requestInFlightRef = useRef(false);
+  const requestInFlightRef = useRef<boolean>(false);
   const cooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setManualCooldown = () => {
@@ -43,13 +44,10 @@ export default function SideBar({ open }: { open: boolean }) {
       }
 
       const result = await response.json();
-      setResponse((prev) => [...prev, `${prev.length + 1}. ${result.verdict}`]);
+      setResponse((prev) => [...prev, result.verdict]);
       console.log("Success:", result);
     } catch (error) {
-      setResponse((prev) => [
-        ...prev,
-        `${prev.length + 1}. Error: RaceGPT failed to respond`,
-      ]);
+      setResponse((prev) => [...prev, "Error: RaceGPT failed to respond"]);
       console.error("Error:", error);
     } finally {
       requestInFlightRef.current = false;
@@ -122,45 +120,60 @@ export default function SideBar({ open }: { open: boolean }) {
 
   return (
     <div
-      className={`min-w-64 w-[20%] h-full m-0 bg-[#232526] text-gray-200 p-6 pt-12 fixed top-0 ${open ? "right-0" : "right-[min(-20%,calc(var(--spacing)*(-72)))]"} z-99 transition-all duration-300 ease-in-out shadow-[-10px_0px_15px_-3px_rgba(0,0,0,0.1)] flex flex-col items-center justify-between`}
+      className={`min-w-64 w-[20%] gap-3 h-full m-0 bg-[#232526] text-gray-200 p-6 pt-12 fixed top-0 ${open ? "right-0" : "right-[min(-20%,calc(var(--spacing)*(-72)))]"} z-99 transition-all duration-300 ease-in-out shadow-[-10px_0px_15px_-3px_rgba(0,0,0,0.1)] flex flex-col items-center justify-between`}
     >
-      <div className="flex justify-center flex-col">
-        <h2 className="text-lg text-center font-bold mt-[25%]">
+      <div className="flex justify-between flex-col w-full gap-3">
+        <h2 className="text-center mt-[5vh] text-lg font-semibold uppercase tracking-[0.26em] text-white/78">
           RaceGPT Copilot
         </h2>
-        <div className="flex items-center gap-2 mt-4">
-          <p>Manual</p>
+        <SideBarTile className="flex flex-row items-center gap-2 justify-center text-[0.75em] 2xl:text-lg">
+          <p>M A N U A L</p>
           <Switch checked={!manual} onChange={handleToggle} />
-          <p>Auto</p>
-        </div>
+          <p>A U T O</p>
+        </SideBarTile>
       </div>
-      <div className="h-full w-full">
-        {response.length == 0
-          ? "Nothing to see here"
-          : response.map((res) => {
-              return <p className="text-wrap">{res}</p>;
-            })}
-      </div>
-      {manual ? (
-        button ? (
-          <Button
-            onClick={handleClick}
-            variant="contained"
-            sx={{
-              "&:focus": {
-                outline: "none", // Removes the default outline on focus
-              },
-              // For standard Material UI buttons, you might need to target the internal state class
-              "&.Mui-focusVisible": {
-                outline: "none",
-              },
-            }}
-          >
-            Request Response
-          </Button>
+      <SideBarTile className="h-full flex flex-col-reverse overflow-y-scroll justify-start">
+        {response.length == 0 ? (
+          <div className="h-full w-full flex justify-center items-center">
+            <h3 className="text-white/55">Nothing to see here</h3>
+          </div>
         ) : (
-          <p className="text-center font-bold">Please wait...</p>
-        )
+          <ol className="space-y-2 pl-0 counter-reset-item">
+            {response.map((res, i) => {
+              return (
+                <li
+                  key={i}
+                  className={`flex border border-white/8 bg-black/18 px-3 py-2.5 text-left text-wrap rounded-md ${res.split(" ")[0] === "Error:" ? "text-[#c41e3a]" : "text-slate-100"}`}
+                >
+                  <span className="block h-full mr-2 font-black">
+                    {i + 1}.{" "}
+                  </span>
+                  {res}
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </SideBarTile>
+      {manual ? (
+        <Button
+          onClick={handleClick}
+          variant="contained"
+          sx={{
+            width: "100%",
+            boxShadow: "0px 18px 40px rgba(0,0,0,0.24)",
+            "&:focus": {
+              outline: "none", // Removes the default outline on focus
+            },
+            // For standard Material UI buttons, you might need to target the internal state class
+            "&.Mui-focusVisible": {
+              outline: "none",
+            },
+          }}
+          disabled={!button}
+        >
+          {button ? "Request Response" : "Please Wait"}
+        </Button>
       ) : (
         <TextField
           id="outlined-basic"
@@ -169,6 +182,7 @@ export default function SideBar({ open }: { open: boolean }) {
           value={textValue}
           onChange={handleChange}
           sx={{
+            width: "100%",
             input: {
               color: "#eeeeee",
             },
@@ -196,5 +210,21 @@ export default function SideBar({ open }: { open: boolean }) {
         />
       )}
     </div>
+  );
+}
+
+function SideBarTile({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={`flex w-full flex-col overflow-hidden rounded-[1.25rem] border border-white/8 bg-[linear-gradient(180deg,#242424,#252525)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] ${className}`}
+    >
+      {children}
+    </section>
   );
 }
