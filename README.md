@@ -6,7 +6,7 @@
 
 ---
 
-### ✅ Specifications
+## ✅ Specifications
 
 **Sensor Data** displays 📈  
 Implement a Kalman filter for accurate location data, and a low pass filter for denoising timeseries sensors.
@@ -33,7 +33,7 @@ data channels for reliable data pipeline.
 
 ---
 
-### 🚀 Getting Started
+## 🚀 Getting Started
 
 1. **Running the Project**
 
@@ -93,7 +93,7 @@ data channels for reliable data pipeline.
 
 ---
 
-### 🤖 ROS Subscriber Data
+## 🤖 ROS Subscriber Data
 
 For the ROS2 subscriber, first get the ROS2 publisher IP address from:
 
@@ -105,7 +105,7 @@ Make sure this matches the ip in the `docker-compose.yml` file.
 
 We set it manually, not via env var, because the publisher IP should not change.
 
-### 💬 RaceGPT Integration
+## 💬 RaceGPT Integration
 
 Plug your machine into another machine running **RaceGPT** via USB.
 The Race Engineer Dashboard should be connected and able to request
@@ -124,7 +124,7 @@ The Race Engineer Dashboard is built as a **real-time, distributed system** with
 
 ---
 
-### 🔄 System Overview
+## 🔄 System Overview
 
 At a high level, the system follows a streaming pipeline:
 
@@ -136,7 +136,7 @@ ROS2 Sensors → Backend (Python) → WebSocket Stream → Frontend (React)
 
 ---
 
-### ⚙️ Backend Architecture (Python + ROS2)
+## ⚙️ Backend Architecture (Python + ROS2)
 
 The backend acts as the **data ingestion and streaming layer**.
 
@@ -156,7 +156,7 @@ The backend acts as the **data ingestion and streaming layer**.
 
 ---
 
-### 💻 Frontend Architecture (React + TypeScript + Bun)
+## 💻 Frontend Architecture (React + TypeScript + Bun)
 
 The frontend is the **real-time visualization and computation layer**.
 
@@ -186,7 +186,7 @@ Offloading calculations reduces backend load and keeps the system responsive und
 
 ---
 
-### 🤖 RaceGPT Integration Flow
+## 🤖 RaceGPT Integration Flow
 
 RaceGPT is integrated as an **on-demand analysis layer**.
 
@@ -204,7 +204,7 @@ RaceGPT is integrated as an **on-demand analysis layer**.
 
 ---
 
-### 📡 Data Reliability and Redundancy
+## 📡 Data Reliability and Redundancy
 
 The system supports **automatic data source switching**:
 
@@ -215,7 +215,7 @@ This ensures continued operation even if one data channel fails.
 
 ---
 
-### 💾 ROSbag + Remote Data Handling
+## 💾 ROSbag + Remote Data Handling
 
 - The frontend can trigger ROSbag recording via `/bag` endpoints
 - The backend communicates with the DAQ machine through **Tailscale**
@@ -223,7 +223,7 @@ This ensures continued operation even if one data channel fails.
 
 ---
 
-### 🧠 Key Architectural Principles
+## 🧠 Key Architectural Principles
 
 - **Real-time first** → WebSockets + in-memory buffers
 - **Separation of concerns** → backend streams, frontend computes
