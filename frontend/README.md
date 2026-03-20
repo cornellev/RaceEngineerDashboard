@@ -2,20 +2,34 @@
 
 ## Getting Started
 
-This project uses Bun. Run the following command in the frontend directory
-to start a dev environment.
+This project uses **Bun** as a package manager and runtime.
+Run the following command in the frontend directory to start a dev environment.
 
 ```
 bun run dev
 ```
 
+This should start a dev environment at `port 5173` on your machine.
+
 Make sure to specify a `VITE_GOOGLE_MAPS_API_KEY` and a
 `VITE_GOOGLE_MAP_ID` in a newly created `.env` file. Follow the
-format in the .env.example for the frontend.
+format in the `.env.example` for the frontend. It's also listed here for reference.
+
+```env
+VITE_GOOGLE_MAPS_API_KEY=Your_Google_Maps_API_Key
+VITE_GOOGLE_MAP_ID=Your_Google_Map_ID
+```
+
+To get your own **Google Maps API** keys and map ID,  
+Head to the [Google Cloud Console](https://console.cloud.google.com/google/maps-hosted/overview),
+create a new project, and go to `Keys and Credentials` to get your Google Maps `API_KEY`or
+generate your own. Then, navigate to the `Map Management` tab, and create a new map to generate your own `MAP_ID`.  
+Refer to the [Google Maps API](https://developers.google.com/maps/documentation/javascript/get-api-key) getting
+started guide for more information.
 
 As a note, the top level `docker compose up` works fine without
 the frontend `.env` file, just follow the instructions in the top
-level README. This frontend instruction is just for development
+level `README`. This frontend instruction is just for development
 of the frontend UI in isolation from the backend.
 
 ## Design
@@ -28,6 +42,10 @@ Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+**TailwindCSS + MUICharts + DaisyUI**  
+This project utilizes these libraries for reusable components and style classes in React.
+These are especially important for the Line Charts, buttons, menus and dashboard tile components.
 
 ### React Compiler
 

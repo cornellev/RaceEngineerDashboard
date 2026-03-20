@@ -43,8 +43,8 @@ ROS 2 topic (spi_data)  →  DataSubscriber  →  History (deque)  →  Broadcas
 - `POST /bag/stop` — Proxy to remote rosbag service (via Tailscale)
 - `GET /bag/status` — Proxy to remote rosbag service (via Tailscale)
 - `GET /healthz` — Proxy to remote rosbag service (via Tailscale)
-- `WS /ws/stream` — WebSocket stream. Clients receive JSON: `{"seq": int, "data": {...}, "stamp_ns": int}`
-- `POST /racegpt` — RaceGPT serial communication endpoint
+- `WS /ws/stream` — WebSocket stream. Clients receive JSON following the format in [UC26 Sensor Reader](https://github.com/cornellev/uc26_sensor_reader).
+- `POST /racegpt` — RaceGPT serial communication endpoint. Response should give `{"verdict": string}`
 
 ## Environment
 
@@ -53,3 +53,10 @@ ROS 2 topic (spi_data)  →  DataSubscriber  →  History (deque)  →  Broadcas
 - `RMW_IMPLEMENTATION` — Set to `rmw_fastrtps_cpp` for FastDDS (must match publisher)
 - `ROS_DISCOVERY_SERVER` — Publisher's Tailscale IP and port (e.g. `100.73.23.79:11811`) for cross-network discovery; required when publisher is on a different machine
 - `TAILSCALE_IP` — Tailscale IP for the remote rosbag API (expects port 8080)
+
+## Customizations
+
+In `main.py` there are two main global values that can be adjusted.
+
+- `DEQUE_SIZE` sets the amount of snapshots kept in history/memory and set to RaceGPT
+- `SAMPLE_RATE_HZ` sets the frequency with which snapshots are sent to Websocket clients
