@@ -464,7 +464,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             </strong>
             {runSession.isRunning ? null : (
               <p
-                className={`transition-opacity wrap text-center hidden overflow-x-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:block duration-1000 ease-in-out ${warn.value ? "opacity-100" : "opacity-0"}`}
+                className={`transition-opacity text-white/55 wrap text-center hidden overflow-x-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:block duration-1000 ease-in-out ${warn.value ? "opacity-100" : "opacity-0"}`}
               >
                 {warn.message}
               </p>
