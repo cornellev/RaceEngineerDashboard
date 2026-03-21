@@ -1,11 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Chivo+Mono:ital,wght@0,100..900;1,100..900&display=swap");
-
 @import "tailwindcss";
 @plugin "daisyui";
-
-@theme {
-  --font-mono: "Chivo Mono", ui-monospace, monospace;
-}
 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
