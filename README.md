@@ -48,8 +48,9 @@ Live telemetry and analysis for the car: sensor streams (with filtering), derive
    The frontend client UI should be running on `port 3000`.  
    The backend healthcheck endpoint is on the root of `port 8000`.
 
-   Integration with RaceGPT is done via serial connection. Connect your machine to a
-   machine running RaceGPT with a USB, and the dashboard should connect when built.
+   Integration with RaceGPT is done over a websocket connection to a machine running
+   RaceGPT. Connect your machine to the RaceGPT host, and the dashboard should
+   connect when built.
 
 3. **Frontend Testing**
 
@@ -96,9 +97,8 @@ We set it manually, not via env var, because the publisher IP should not change.
 
 ## RaceGPT Integration
 
-Plug your machine into another machine running **RaceGPT** via USB.
-The Race Engineer Dashboard should be connected and able to request
-custom LLM responses on the live data snapshots with analysis.
+Connect your machine to another machine running **RaceGPT** so the dashboard can
+reach the RaceGPT websocket service and request analysis on live telemetry snapshots.
 
 As mentioned above, there are two modes for requesting responses on the sidebar.
 
