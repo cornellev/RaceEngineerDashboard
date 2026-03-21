@@ -347,7 +347,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               <GaugePointer />
             </GaugeContainer>
             <div className="flex flex-1 flex-col xl:items-end text-right items-center mb-3">
-              <strong className="text-5xl font-semibold leading-none text-white 2xl:text-6xl font-mono">
+              <strong className="text-5xl font-semibold leading-none text-white 2xl:text-6xl tabular-nums">
                 {formatValue(latestSpeed, 1)}
               </strong>
               <span className="mt-1 text-sm uppercase tracking-[0.2em] text-white/55">
@@ -459,7 +459,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             </div>
           ) : null}
           <div className="flex items-center justify-between gap-0 sm:gap-2 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5">
-            <strong className="text-3xl font-semibold leading-none text-white sm:5xl xl:text-6xl font-mono">
+            <strong className="text-3xl font-semibold leading-none text-white sm:5xl xl:text-6xl tabular-nums">
               {runTimerLabel}
             </strong>
             {runSession.isRunning ? null : (
@@ -559,7 +559,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                     fill: "#90CAF9",
                   },
                   [`& .${gaugeClasses.valueText}`]: {
-                    fontFamily: "Chivo Mono",
+                    fontVariantNumeric: "tabular-nums",
                     fontWeight: 500,
                     fontSize: 22,
                     transform: "translate(0px, 0px)",
@@ -674,7 +674,7 @@ function SignalTile({
       </div>
       {children}
       {value ? (
-        <div className="mt-2 text-lg font-semibold leading-tight text-white xl:text-xl font-mono">
+        <div className="mt-2 text-lg font-semibold leading-tight text-white xl:text-xl tabular-nums">
           {value}
         </div>
       ) : null}
@@ -696,7 +696,7 @@ function MetricPanel({
       <div className="text-[11px] uppercase tracking-[0.22em] text-white/42">
         {label}
       </div>
-      <div className="mt-2 text-2xl font-semibold leading-none text-white xl:text-3xl font-mono">
+      <div className="mt-2 text-2xl font-semibold leading-none text-white xl:text-3xl tabular-nums">
         {value}
       </div>
       <div className="mt-1 text-xs text-white/55">{helper}</div>

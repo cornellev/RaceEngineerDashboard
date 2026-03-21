@@ -36,6 +36,7 @@ export interface SocketData {
   filtered: {
     speed: number;
   };
+  latency_ms: number | null;
 }
 
 type MessageHandler = (data: SocketData) => void;
@@ -84,6 +85,7 @@ const toTimestampMs = (value: unknown): number | null => {
 const normalizeData = (
   payload: unknown,
   envelope?: LooseRecord,
+  recvMs?: number,
 ): SocketData => {
   const root = asRecord(payload);
   const power = asRecord(root.power);
@@ -114,6 +116,12 @@ const normalizeData = (
     timestampCandidates
       .map((candidate) => toTimestampMs(candidate))
       .find((candidate) => candidate !== null) ?? Date.now();
+
+  const tPublishNs = toNumber(root._t_publish_ns, Number.NaN);
+  const latency_ms =
+    recvMs != null && Number.isFinite(tPublishNs) && tPublishNs > 0
+      ? recvMs - tPublishNs / 1e6
+      : null;
 
   return {
     seq: toNumber(root.seq ?? envelope?.seq, 0),
@@ -157,6 +165,7 @@ const normalizeData = (
     filtered: {
       speed: toNumber(filtered.speed ?? speedValue),
     },
+    latency_ms,
   };
 };
 
@@ -194,8 +203,10 @@ class SocketService {
     };
 
     this.socket.onmessage = (event: MessageEvent) => {
+      const recvMs = Date.now();
       const envelope = JSON.parse(event.data);
-      const data = normalizeData(envelope.data ?? envelope, asRecord(envelope));
+      const data = normalizeData(envelope.data ?? envelope, asRecord(envelope), recvMs);
+      console.log(`[latency] ${data.latency_ms != null ? data.latency_ms.toFixed(2) + "ms" : "unavailable"}`);
       this.data = [...this.data.slice(-2000), data];
       this.handlers.forEach((handler) => handler(data));
       this.resetDataTimeout();

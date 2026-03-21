@@ -29,6 +29,7 @@ const data: SocketData[] = [
     },
     motor: { ts: 752764523, rpm: 0.0, throttle: 0.0 },
     filtered: { speed: 0.0 },
+    latency_ms: null,
   },
   {
     seq: 103830,
@@ -54,6 +55,7 @@ const data: SocketData[] = [
     },
     motor: { ts: 1605639937, rpm: 0.0, throttle: 0.0 },
     filtered: { speed: 0.0 },
+    latency_ms: null,
   },
   {
     seq: 103830,
@@ -79,6 +81,7 @@ const data: SocketData[] = [
     },
     motor: { ts: 1605639937, rpm: 0.0, throttle: 0.0 },
     filtered: { speed: 5.0 },
+    latency_ms: null,
   },
   {
     seq: 103830,
@@ -104,6 +107,7 @@ const data: SocketData[] = [
     },
     motor: { ts: 1605639937, rpm: 0.0, throttle: 0.0 },
     filtered: { speed: 4.0 },
+    latency_ms: null,
   },
   {
     seq: 103830,
@@ -129,6 +133,7 @@ const data: SocketData[] = [
     },
     motor: { ts: 1605639937, rpm: 0.0, throttle: 0.0 },
     filtered: { speed: 5.0 },
+    latency_ms: null,
   },
   {
     seq: 103830,
@@ -154,6 +159,7 @@ const data: SocketData[] = [
     },
     motor: { ts: 1605639937, rpm: 0.0, throttle: 10.0 },
     filtered: { speed: 5.0 },
+    latency_ms: null,
   },
 ];
 
