@@ -446,7 +446,10 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 Laps
               </h2>
               <div className="flex justify-start flex-row-reverse overflow-x-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                {calculateLapTimes(runSession.lapTimes).map((lapTime) => {
+                {calculateLapTimes(
+                  runSession.lapTimes,
+                  runSession.startTimestamp ?? 0,
+                ).map((lapTime) => {
                   return (
                     <p
                       className={`text-sm font-semibold uppercase tracking-[0.26em] text-${lapTime.color}-700 ml-3`}
@@ -860,9 +863,12 @@ function calculateEfficiency(sample: SocketData): number | null {
 
 function calculateLapTimes(
   lapTimestamps: number[],
+  startTime?: number,
 ): { value: number; color: string }[] {
   if (lapTimestamps.length === 0) return [];
-  let lapTimes = [{ value: lapTimestamps[0], color: "gray" }];
+  let lapTimes = [
+    { value: lapTimestamps[0] - (startTime ?? 0), color: "gray" },
+  ];
   for (let i = 1; i < lapTimestamps.length; i++) {
     const value = lapTimestamps[i] - lapTimestamps[i - 1];
     const color = value > lapTimes[lapTimes.length - i].value ? "green" : "red";
