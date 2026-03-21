@@ -1,12 +1,13 @@
-# 📊 Race Engineer Dashboard
+# Race Engineer Dashboard
 
-🛠️ **Donte and Adi** ⚙️
+## Team Members
+Donte and Adi
 
 ![Live Dashboard Image](frontend/public/dashboard.png)
 
 ---
 
-## ✅ Specifications
+## Specifications
 
 **Sensor Data** displays 📈  
 Implement a Kalman filter for accurate location data, and a low pass filter for denoising timeseries sensors.
@@ -33,25 +34,12 @@ data channels for reliable data pipeline.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 1. **Running the Project**
 
    Create a `.env` file in the the root directory (not under `/backend` or `/frontend`).
-   See `.env.example` for more info. The format for the `.env` is also listed below here for reference.
-
-   ```env
-    VITE_GOOGLE_MAPS_API_KEY=Your_Google_Maps_API_Key
-    VITE_GOOGLE_MAP_ID=Your_Google_Map_ID
-
-    TS_CLIENT_ID=your tailscale client id
-    TS_CLIENT_SECRET=your tailscale client secret
-
-    # Tailscale IP of the DAQ machine (ros-tailscale-service)
-    TAILSCALE_IP=100.110.98.26
-    # Port the rosbag API listens on (on the DAQ machine)
-    ROSBAG_API_PORT=8080
-   ```
+   See `.env.example` for more info. 
 
    Make sure Docker containers and volumes for this project are not running already.
    Then, run `docker compose up --build` to get all containers running.
@@ -93,7 +81,7 @@ data channels for reliable data pipeline.
 
 ---
 
-## 🤖 ROS Subscriber Data
+## ROS Subscriber Data
 
 For the ROS2 subscriber, first get the ROS2 publisher IP address from:
 
@@ -105,7 +93,7 @@ Make sure this matches the ip in the `docker-compose.yml` file.
 
 We set it manually, not via env var, because the publisher IP should not change.
 
-## 💬 RaceGPT Integration
+## RaceGPT Integration
 
 Plug your machine into another machine running **RaceGPT** via USB.
 The Race Engineer Dashboard should be connected and able to request
@@ -118,13 +106,13 @@ As mentioned above, there are two modes for requesting responses on the sidebar.
 
 ---
 
-# 🏗️ Design and Architecture
+# Design and Architecture
 
 The Race Engineer Dashboard is built as a **real-time, distributed system** with a clear separation between data ingestion, processing, and visualization. The architecture is designed to prioritize **low-latency streaming**, **fault tolerance**, and **modular extensibility**.
 
 ---
 
-## 🔄 System Overview
+## System Overview
 
 At a high level, the system follows a streaming pipeline:
 
@@ -136,7 +124,7 @@ ROS2 Sensors → Backend (Python) → WebSocket Stream → Frontend (React)
 
 ---
 
-## ⚙️ Backend Architecture (Python + ROS2)
+## Backend Architecture (Python + ROS2)
 
 The backend acts as the **data ingestion and streaming layer**.
 
@@ -148,15 +136,9 @@ The backend acts as the **data ingestion and streaming layer**.
   - RaceGPT requests (`/racegpt`)
   - ROSbag control (`/bag/*`)
 
-**Key design decisions:**
-
-- WebSockets over HTTP polling → minimizes latency and avoids redundant requests
-- In-memory buffering → enables quick access to recent history without database overhead
-- Stateless endpoints → simplifies scaling and failure recovery
-
 ---
 
-## 💻 Frontend Architecture (React + TypeScript + Bun)
+## Frontend Architecture (React + TypeScript + Bun)
 
 The frontend is the **real-time visualization and computation layer**.
 
@@ -181,12 +163,9 @@ The frontend is the **real-time visualization and computation layer**.
   - Google Maps GPS visualization
   - Stopwatch and timestamp tracking
 
-**Why compute on the frontend?**  
-Offloading calculations reduces backend load and keeps the system responsive under high-frequency data streams.
-
 ---
 
-## 🤖 RaceGPT Integration Flow
+## RaceGPT Integration Flow
 
 RaceGPT is integrated as an **on-demand analysis layer**.
 
@@ -204,18 +183,7 @@ RaceGPT is integrated as an **on-demand analysis layer**.
 
 ---
 
-## 📡 Data Reliability and Redundancy
-
-The system supports **automatic data source switching**:
-
-- **Primary:** ROS2 subscriber (local DAQ pipeline)
-- **Fallback:** Cellular modem data stream
-
-This ensures continued operation even if one data channel fails.
-
----
-
-## 💾 ROSbag + Remote Data Handling
+## ROSbag + Remote Data Handling
 
 - The frontend can trigger ROSbag recording via `/bag` endpoints
 - The backend communicates with the DAQ machine through **Tailscale**
@@ -223,14 +191,4 @@ This ensures continued operation even if one data channel fails.
 
 ---
 
-## 🧠 Key Architectural Principles
-
-- **Real-time first** → WebSockets + in-memory buffers
-- **Separation of concerns** → backend streams, frontend computes
-- **Low overhead** → no database in the hot path
-- **Extensibility** → modular endpoints and components
-- **Resilience** → dual data sources + stateless services
-
----
-
-This design allows the dashboard to handle **high-frequency telemetry**, deliver **instant visual feedback**, and integrate **AI-driven insights** without compromising performance.
+The dashboard can handle **high-frequency telemetry**, deliver **instant visual feedback**, and integrate **AI-driven insights** without compromising performance.
