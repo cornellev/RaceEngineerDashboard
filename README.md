@@ -1,6 +1,9 @@
 # Race Engineer Dashboard
 
-## Donte & Adi
+## Team Members
+Donte & Adi
+
+---
 
 ![Live Dashboard Image](frontend/public/dashboard.png)
 
@@ -49,7 +52,7 @@ data channels for reliable data pipeline.
    Integration with RaceGPT is done via serial connection. Connect your machine to a
    machine running RaceGPT with a USB, and the dashboard should connect when built.
 
-2. **Frontend Testing**
+3. **Frontend Testing**
 
    Refer to `frontend/README.md` for more information.  
    **[Bun Installation](https://bun.com/docs/installation)**: The frontend uses **Bun** instead of **NodeJS** as a package manager
@@ -74,7 +77,7 @@ data channels for reliable data pipeline.
 
    Instructions for getting your own `API_KEY` and `MAP_ID` are in `frontend/README.md`.
 
-3. **Backend Troubleshooting**
+4. **Backend Troubleshooting**
 
    Refer to `backend/README.md`.
 
@@ -132,7 +135,3 @@ RaceGPT is integrated as an **on-demand analysis layer**.
 - The frontend can trigger ROSbag recording via `/bag` endpoints
 - The backend communicates with the DAQ machine through **Tailscale**
 - ROSbag files are stored remotely for later analysis and replay
-
----
-
-The dashboard can handle **high-frequency telemetry**, deliver **instant visual feedback**, and integrate **AI-driven insights** without compromising performance.
