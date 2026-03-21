@@ -1,62 +1,70 @@
 # Backend Design and Build
 
-FastAPI service that subscribes to a ROS 2 topic and streams data to the frontend over WebSocket.
+FastAPI service that subscribes to the ROS 2 `spi_data` topic and streams snapshots to the frontend over WebSocket. It also proxies rosbag control requests and forwards RaceGPT requests to a websocket-based RaceGPT service.
 
 ## Getting Started
 
 ### Local development
 
-Requires Python, FastAPI, and ROS 2 Humble. Run from the backend directory:
+Requires Python and ROS 2 Humble. Run from the `backend/` directory:
 
-```
+```bash
 pip install -r requirements.txt
 source /opt/ros/humble/setup.bash
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-The backend must run in an environment where ROS 2 can discover the `spi_data` topic (same discovery server).
+The backend must run in an environment where ROS 2 can discover the `spi_data` topic. If you are using a Fast DDS discovery server outside Docker, configure the appropriate ROS/Fast DDS environment variables before starting the app.
 
 ### Docker (recommended)
 
 From the project root:
 
-```
+```bash
 docker compose up --build
 ```
 
-The backend runs alongside Tailscale and shares its network stack (`network_mode: service:tailscale`), so it can reach the ROS publisher over Tailscale. The API is exposed on port 8000 via the Tailscale container.
+The backend shares the Tailscale container's network stack (`network_mode: service:tailscale`), so the API is exposed on port `8000` through the Tailscale service. On startup, the backend entrypoint generates a Fast DDS client profile from `super_client.example.xml`, sets `FASTRTPS_DEFAULT_PROFILES_FILE`, and exports `ROS_DISCOVERY_SERVER=${DISCOVERY_SERVER_IP}:11811`.
 
 ## Data Pipeline
 
-```
-ROS 2 topic (spi_data)  →  DataSubscriber  →  History (deque)  →  Broadcaster  →  WebSocket clients
+```text
+ROS 2 topic (spi_data) -> DataSubscriber -> History (deque) -> Broadcaster -> WebSocket clients
 ```
 
-1. **DataSubscriber** (`subscriber.py`) — ROS 2 node subscribing to `std_msgs/String` on topic `spi_data`. Expects JSON payloads.
-2. **History** — Bounded deque (maxlen=1000) holds the latest snapshots from the ROS thread.
-3. **Broadcaster** — Sends each new message to all connected WebSocket clients.
+1. **DataSubscriber** (`subscriber.py`) subscribes to `std_msgs/String` on topic `spi_data`. Expects JSON payloads.
+2. **History** stores the latest snapshots from the ROS thread in a bounded deque.
+3. **Broadcaster** pushes the newest snapshot to every connected WebSocket client.
 
 ## API
 
-- `GET /` — Health check. Returns `{"message": "Race Telemetry API", "status": "running"}`
-- `POST /bag/start` — Proxy to remote rosbag service (via Tailscale)
-- `POST /bag/stop` — Proxy to remote rosbag service (via Tailscale)
-- `GET /bag/status` — Proxy to remote rosbag service (via Tailscale)
-- `GET /healthz` — Proxy to remote rosbag service (via Tailscale)
-- `WS /ws/stream` — WebSocket stream. Clients receive JSON following the format in [UC26 Sensor Reader](https://github.com/cornellev/uc26_sensor_reader).
-- `POST /racegpt` — RaceGPT serial communication endpoint. Response should give `{"verdict": string}`
+- `GET /` returns `{"message": "Race Telemetry API", "status": "running"}`.
+- `POST /bag/start` proxies a start request to the remote rosbag service.
+- `POST /bag/stop` proxies a stop request to the remote rosbag service.
+- `GET /bag/status` proxies a status request to the remote rosbag service.
+- `GET /healthz` returns backend health in the form `{"local": "ok", "bag_service": "ok" | "error" | "unreachable"}`.
+- `WS /ws/stream` sends messages shaped like `{"seq": number, "data": <latest ROS JSON>, "stamp_ns": number}`.
+- `POST /racegpt` forwards the posted JSON body to the RaceGPT websocket service and returns the JSON response.
 
 ## Environment
 
-- `ROS_DOMAIN_ID` (default: 14) — ROS 2 DDS domain ID; must match publisher
-- `ROS_LOCALHOST_ONLY` (default: 0) — Allow non-localhost ROS discovery
-- `RMW_IMPLEMENTATION` — Set to `rmw_fastrtps_cpp` for FastDDS (must match publisher)
-- `ROS_DISCOVERY_SERVER` — Publisher's Tailscale IP and port (e.g. `100.73.23.79:11811`) for cross-network discovery; required when publisher is on a different machine
-- `TAILSCALE_IP` — Tailscale IP for the remote rosbag API (expects port 8080)
+### ROS and network configuration
+
+- `ROS_DOMAIN_ID` (default: `14`) must match the publisher's DDS domain.
+- `ROS_LOCALHOST_ONLY` (default: `0`) allows non-localhost ROS discovery.
+- `DISCOVERY_SERVER_IP` is used by the Docker entrypoint to build the Fast DDS client profile and set `ROS_DISCOVERY_SERVER=<DISCOVERY_SERVER_IP>:11811`.
+- `TAILSCALE_IP` is used for remote rosbag API requests at `http://<TAILSCALE_IP>:8080`.
+
+### RaceGPT configuration
+
+- `RACEGPT_WS_URI` (default: `ws://192.168.55.1:8000/ws/analyze`) is the websocket endpoint used for RaceGPT requests.
+- `RACEGPT_CONNECT_TIMEOUT_SEC` (default: `15`) controls how long the backend waits to establish a RaceGPT websocket connection.
+- `RACEGPT_RESPONSE_TIMEOUT_SEC` (default: `18`) controls websocket send/receive timeouts inside the RaceGPT client.
+- `RACEGPT_REQUEST_TIMEOUT_SEC` (default: `20`) controls the overall timeout for the `/racegpt` HTTP endpoint.
 
 ## Customizations
 
-In `main.py` there are two main global values that can be adjusted.
+The main runtime tuning constants live in `main.py`:
 
-- `DEQUE_SIZE` sets the amount of snapshots kept in history/memory and set to RaceGPT
-- `SAMPLE_RATE_HZ` sets the frequency with which snapshots are sent to Websocket clients
+- `DEQUE_SIZE` controls how many snapshots are retained in backend memory.
+- `SAMPLE_RATE_HZ` controls how often snapshots are added to history and broadcast to WebSocket clients.
