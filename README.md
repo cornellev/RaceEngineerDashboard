@@ -1,13 +1,12 @@
 # Race Engineer Dashboard
 
-## Team Members
-Donte and Adi
+## Donte & Adi
 
 ![Live Dashboard Image](frontend/public/dashboard.png)
 
 ---
 
-## Specifications
+## Summary
 
 **Sensor Data** displays 📈  
 Implement a Kalman filter for accurate location data, and a low pass filter for denoising timeseries sensors.
@@ -106,62 +105,13 @@ As mentioned above, there are two modes for requesting responses on the sidebar.
 
 ---
 
-# Design and Architecture
-
-The Race Engineer Dashboard is built as a **real-time, distributed system** with a clear separation between data ingestion, processing, and visualization. The architecture is designed to prioritize **low-latency streaming**, **fault tolerance**, and **modular extensibility**.
-
----
-
 ## System Overview
 
-At a high level, the system follows a streaming pipeline:
-
 ```
-ROS2 Sensors → Backend (Python) → WebSocket Stream → Frontend (React)
+ROS2 Sensors → Backend (Python + ROS2) → WebSocket Stream → Frontend (React + TypeScript + Bun)
                                           ↓
                                   RaceGPT Integration
 ```
-
----
-
-## Backend Architecture (Python + ROS2)
-
-The backend acts as the **data ingestion and streaming layer**.
-
-- Subscribes to **ROS2 topics** publishing live sensor data using Python ROS libraries
-- Maintains an **in-memory rolling buffer (~1000 snapshots)** of the most recent telemetry
-- Applies filtering logic (e.g., Kalman, low-pass) before broadcasting
-- Exposes a **WebSocket endpoint** at `/ws/stream` for real-time data delivery
-- Provides REST endpoints for:
-  - RaceGPT requests (`/racegpt`)
-  - ROSbag control (`/bag/*`)
-
----
-
-## Frontend Architecture (React + TypeScript + Bun)
-
-The frontend is the **real-time visualization and computation layer**.
-
-**Core stack:**
-
-- **React + TypeScript** → component-based architecture with type safety
-- **Vite** → fast dev server + HMR
-- **Bun** → faster runtime and package management
-- **Tailwind + DaisyUI + MUI Charts** → rapid UI development and reusable components
-
-**Responsibilities:**
-
-- Consumes live data from `/ws/stream` via WebSockets
-- Maintains its own **rolling buffer (~1200 data points/~10s)** for time-series visualization
-- Performs all **client-side computations**, including:
-  - Unit conversions i.e. m/s → mph
-  - Derived metrics (efficiency, energy, distance)
-  - Data formatting for visualization
-- Drives **interactive UI components**:
-  - Time-series charts
-  - Live telemetry indicators
-  - Google Maps GPS visualization
-  - Stopwatch and timestamp tracking
 
 ---
 
@@ -174,12 +124,6 @@ RaceGPT is integrated as an **on-demand analysis layer**.
 3. RaceGPT processes the data and returns a **verdict/analysis**
 4. The backend relays the response back to the frontend
 5. The frontend displays the result in the sidebar (manual or automatic modes)
-
-**Design implications:**
-
-- Decouples AI inference from the main pipeline
-- Prevents blocking real-time telemetry flow
-- Allows flexible deployment of RaceGPT on separate hardware
 
 ---
 
