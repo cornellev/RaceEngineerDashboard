@@ -11,28 +11,27 @@ Donte & Adi
 
 ## Summary
 
-**Sensor Data** displays 📈  
-Implement a Kalman filter for accurate location data, and a low pass filter for denoising timeseries sensors.
+Live telemetry and analysis for the car: sensor streams (with filtering), derived run metrics, and optional **RaceGPT** insights in a sidebar.
 
+**Filtering & sensor views**
+
+- **Kalman filtering** for more reliable GPS position; **low-pass filtering** to denoise time-series channels
 - **Speed** time series, live, and max value
 - **Power** time series (calculated from current and voltage data)
 - **GPS** location display with Google Maps
 - Live **Steering** angle, **Brake** pressure, **Throttle**, and **RPM** on all wheels
+- Timestamps and stopwatch for lap and race timing
 
-**Calculated Data** displays for relevant metrics
+
+**Derived metrics**
 
 - **Distance** calculated from aggregating GPS data
-- **Energy Usage** calculated from power
+- **Energy Use** calculated from power
 - **Efficiency** instantaneous and average over a run
 
-**RaceGPT Integration** via a sidebar allowing two modes.
+**RaceGPT**
 
-- Manually request LLM responses (5s buffer between responses)
-- Automatically request and display LLM responses based on set frequency >5s
-
-Timestamping and stopwatch features for tracking lap and race time ⌚  
-Implement automatic mode switching between ROS subscriber and cellular modem sensor
-data channels for reliable data pipeline.
+- Configurable manual or automatic LLM requests **that analyze recent telemetry data and return verdicts on improving performance**
 
 ---
 
@@ -88,7 +87,7 @@ data channels for reliable data pipeline.
 For the ROS2 subscriber, first get the ROS2 publisher IP address from:
 
 ```sh
-ssh cev@<daq tailscale ip> "docker exec ts-authkey-container tailscale ip" | head -n1)
+ssh cev@<daq tailscale ip> "docker exec ts-authkey-container tailscale ip" | head -n1
 ```
 
 Make sure this matches the ip in the `docker-compose.yml` file.
