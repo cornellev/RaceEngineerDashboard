@@ -13,9 +13,8 @@ Donte & Adi
 
 Live telemetry and analysis for the car: sensor streams (with filtering), derived run metrics, and optional **RaceGPT** insights in a sidebar.
 
-**Filtering & sensor views**
+**Sensor views**
 
-- **Kalman filtering** for more reliable GPS position; **low-pass filtering** to denoise time-series channels
 - **Speed** time series, live, and max value
 - **Power** time series (calculated from current and voltage data)
 - **GPS** location display with Google Maps
