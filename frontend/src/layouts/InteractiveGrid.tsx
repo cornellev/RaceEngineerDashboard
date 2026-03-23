@@ -373,7 +373,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         className="min-h-42.5 lg:col-span-5 lg:row-start-1"
         title="Run Summary"
       >
-        <div className="flex h-full flex-col justify-between">
+        <div className="flex h-full flex-col justify-between gap-1">
           <div className="grid grid-cols-2 gap-2">
             <MetricPanel
               label="Instant Efficiency"
