@@ -523,7 +523,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
       <DashboardCard
         className="min-h-55 lg:col-span-4 xl:col-span-3 lg:row-start-2"
-        title="Signals"
+        title="Signals (Calibration WIP)"
       >
         <div className="grid h-full grid-cols-2 gap-2">
           <SignalTile
