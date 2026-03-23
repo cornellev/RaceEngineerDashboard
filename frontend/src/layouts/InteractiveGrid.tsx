@@ -347,7 +347,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               <GaugePointer />
             </GaugeContainer>
             <div className="flex flex-1 flex-col xl:items-end text-right items-center mb-3">
-              <strong className="text-4xl lg:text-5xl font-semibold leading-none text-white 2xl:text-6xl tabular-nums">
+              <strong className="text-5xl lg:text-4xl font-semibold leading-none text-white 2xl:text-6xl tabular-nums">
                 {formatValue(latestSpeed, 1)}
               </strong>
               <span className="mt-1 text-sm uppercase tracking-[0.2em] text-white/55">
