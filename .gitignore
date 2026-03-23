@@ -5,3 +5,4 @@ frontend/.env
 .direnv
 .envrc
 .DS_Store
+backend/__pycache__
