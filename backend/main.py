@@ -202,17 +202,18 @@ racegpt_lock = asyncio.Lock()
 
 @app.post("/racegpt")
 async def racegpt(data: dict):
+    if racegpt_lock.locked():
+        raise HTTPException(status_code=409, detail="RaceGPT reasoning already in progress")
+
     async with racegpt_lock:
         try:
             print("called race-gpt...",flush=True)
-            response = await asyncio.wait_for(
-                racegpt_module.get_response(data),
-                timeout=RACEGPT_REQUEST_TIMEOUT_SEC
-            )
-        except asyncio.TimeoutError:
-            raise HTTPException(status_code=504, detail="RaceGPT device did not respond")
+            response = await racegpt_module.get_response(data)
         except RuntimeError as exc:
-            raise HTTPException(status_code=502, detail="RaceGPT websocket request failed") from exc
+            message = str(exc)
+            if "timed out" in message.lower():
+                raise HTTPException(status_code=504, detail="RaceGPT device did not respond") from exc
+            raise HTTPException(status_code=502, detail="RaceGPT request failed") from exc
 
     return response
 

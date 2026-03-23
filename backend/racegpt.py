@@ -1,121 +1,128 @@
 import asyncio
-import json
 import os
+import time
+from urllib.parse import urlsplit, urlunsplit
 
-import websockets
-from websockets.exceptions import WebSocketException
+import httpx
 
 
-RACEGPT_WS_URI = os.getenv("RACEGPT_WS_URI", "ws://192.168.55.1:8000/ws/analyze")
-CONNECT_TIMEOUT_SEC = float(os.getenv("RACEGPT_CONNECT_TIMEOUT_SEC", "15"))
-RESPONSE_TIMEOUT_SEC = float(os.getenv("RACEGPT_RESPONSE_TIMEOUT_SEC", "18"))
+def _normalize_racegpt_url() -> str:
+    configured = os.getenv("RACEGPT_URL") or os.getenv(
+        "RACEGPT_WS_URI", "http://100.110.39.54:8000/analyze"
+    )
+    parts = urlsplit(configured)
+
+    if parts.scheme in {"ws", "wss"}:
+        http_scheme = "https" if parts.scheme == "wss" else "http"
+        path = parts.path
+        if path == "/ws/analyze":
+            path = "/analyze"
+        return urlunsplit((http_scheme, parts.netloc, path, parts.query, parts.fragment))
+
+    return configured
+
+
+RACEGPT_URL = _normalize_racegpt_url()
+CONNECT_TIMEOUT_SEC = float(os.getenv("RACEGPT_CONNECT_TIMEOUT_SEC", "3"))
+RESPONSE_TIMEOUT_SEC = float(os.getenv("RACEGPT_RESPONSE_TIMEOUT_SEC", "10"))
+CONNECT_RETRIES = int(os.getenv("RACEGPT_CONNECT_RETRIES", "3"))
+CONNECT_RETRY_DELAY_SEC = float(os.getenv("RACEGPT_CONNECT_RETRY_DELAY_SEC", "0.2"))
 
 
 class RaceGPTClient:
-    def __init__(self, uri: str):
-        self.uri = uri
-        self._websocket = None
-        self._connect_lock = asyncio.Lock()
+    def __init__(self, url: str):
+        self.url = url
         self._request_lock = asyncio.Lock()
+        self._request_seq = 0
 
-    def _is_connected(self):
-        websocket = self._websocket
-        if websocket is None:
-            return False
+    async def _post_once(self, payload: dict):
+        timeout = httpx.Timeout(RESPONSE_TIMEOUT_SEC, connect=CONNECT_TIMEOUT_SEC)
+        headers = {"Connection": "close"}
+        async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:
+            print(f"[RaceGPT] HTTP client ready for {self.url}", flush=True)
+            response = await client.post(self.url, json=payload)
+            response.raise_for_status()
+            return response.json()
 
-        closed = getattr(websocket, "closed", None)
-        if isinstance(closed, bool):
-            return not closed
+    def _normalize_payload(self, data: dict) -> dict:
+        if not isinstance(data, dict):
+            return {"json": data}
 
-        state = getattr(websocket, "state", None)
-        state_name = getattr(state, "name", None)
-        if state_name is not None:
-            return state_name == "OPEN"
+        if "csv" in data:
+            return {"csv": data["csv"]}
 
-        return True
+        if "json" in data:
+            return {"json": data["json"]}
 
-    async def _open(self):
-        return await websockets.connect(
-            self.uri,
-            open_timeout=CONNECT_TIMEOUT_SEC,
-            ping_interval=20,
-            ping_timeout=20,
-            max_queue=1,
-        )
+        if "data" in data:
+            return {"json": data["data"]}
 
-    async def _ensure_connected(self):
-        if self._is_connected():
-            return self._websocket
-
-        async with self._connect_lock:
-            if self._is_connected():
-                return self._websocket
-
-            if self._websocket is not None:
-                await self._safe_close()
-
-            self._websocket = await self._open()
-            print(f"[RaceGPT] connected to {self.uri}", flush=True)
-            return self._websocket
-
-    async def _safe_close(self):
-        websocket = self._websocket
-        self._websocket = None
-        if websocket is None:
-            return
-
-        try:
-            await websocket.close()
-        except Exception:
-            pass
+        return {"json": data}
 
     async def get_response(self, data: dict):
-        payload = json.dumps(data)
+        normalized_data = self._normalize_payload(data)
+        self._request_seq += 1
+        request_id = self._request_seq
+        sample_count = (
+            len(normalized_data.get("json", []))
+            if isinstance(normalized_data.get("json"), list)
+            else -1
+        )
+        start = time.monotonic()
 
         async with self._request_lock:
             last_error = None
 
-            for attempt in range(2):
-                websocket = await self._ensure_connected()
+            for attempt in range(CONNECT_RETRIES):
                 try:
-                    await asyncio.wait_for(
-                        websocket.send(payload),
-                        timeout=RESPONSE_TIMEOUT_SEC,
-                    )
-                    response = await asyncio.wait_for(
-                        websocket.recv(),
-                        timeout=RESPONSE_TIMEOUT_SEC,
-                    )
-                    decoded = json.loads(response)
-                    print("[RaceGPT] response received", flush=True)
-                    return decoded
-                except asyncio.CancelledError:
-                    print("[RaceGPT] request cancelled; resetting websocket", flush=True)
-                    await self._safe_close()
-                    raise
-                except (
-                    ConnectionError,
-                    asyncio.TimeoutError,
-                    WebSocketException,
-                    OSError,
-                    json.JSONDecodeError,
-                ) as exc:
-                    last_error = exc
                     print(
-                        f"[RaceGPT] request failed on attempt {attempt + 1}: {exc}",
+                        (
+                            f"[RaceGPT] HTTP request {request_id} attempt {attempt + 1}/"
+                            f"{CONNECT_RETRIES}: samples={sample_count}"
+                        ),
                         flush=True,
                     )
-                    await self._safe_close()
+                    decoded = await self._post_once(normalized_data)
+                    elapsed = time.monotonic() - start
+                    print(
+                        f"[RaceGPT] HTTP request {request_id} response received in {elapsed:.2f}s",
+                        flush=True,
+                    )
+                    return decoded
+                except (httpx.TimeoutException, httpx.TransportError) as exc:
+                    last_error = exc
+                    print(
+                        (
+                            f"[RaceGPT] HTTP request {request_id} transport failure on "
+                            f"attempt {attempt + 1}: {type(exc).__name__}: {exc}"
+                        ),
+                        flush=True,
+                    )
+                    if attempt + 1 < CONNECT_RETRIES:
+                        await asyncio.sleep(CONNECT_RETRY_DELAY_SEC)
+                except httpx.HTTPStatusError as exc:
+                    print(
+                        (
+                            f"[RaceGPT] HTTP request {request_id} upstream returned "
+                            f"{exc.response.status_code}"
+                        ),
+                        flush=True,
+                    )
+                    raise RuntimeError("RaceGPT HTTP request failed") from exc
+                except ValueError as exc:
+                    print(
+                        f"[RaceGPT] HTTP request {request_id} invalid JSON response: {exc}",
+                        flush=True,
+                    )
+                    raise RuntimeError("RaceGPT returned invalid JSON") from exc
 
-            raise RuntimeError("RaceGPT websocket request failed") from last_error
+            raise RuntimeError("RaceGPT HTTP connection failed") from last_error
 
     async def close(self):
-        async with self._connect_lock:
-            await self._safe_close()
-            print("[RaceGPT] connection closed", flush=True)
+        print("[RaceGPT] HTTP client closed", flush=True)
 
 
-client = RaceGPTClient(RACEGPT_WS_URI)
+client = RaceGPTClient(RACEGPT_URL)
 
 
 async def get_response(data: dict):

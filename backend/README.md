@@ -1,6 +1,6 @@
 # Backend
 
-FastAPI service that subscribes to the ROS 2 `spi_data` topic, streams telemetry to the frontend over WebSocket, proxies rosbag control requests, and forwards RaceGPT requests to a websocket-based RaceGPT service.
+FastAPI service that subscribes to the ROS 2 `spi_data` topic and streams snapshots to the frontend over WebSocket. It also proxies rosbag control requests and forwards RaceGPT requests to the RaceGPT analysis service.
 
 ## Running the backend
 

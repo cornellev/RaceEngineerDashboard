@@ -3,27 +3,15 @@ import type { ReactNode } from "react";
 import { TextField, Switch, Button } from "@mui/material";
 import socket from "../utils/Socket";
 
+const RACEGPT_SAMPLE_WINDOW = 120;
+
 export default function SideBar({ open }: { open: boolean }) {
   const [manual, setManual] = useState<boolean>(true);
-  const [button, setButton] = useState<boolean>(true);
+  const [isRequestPending, setIsRequestPending] = useState<boolean>(false);
   const [textValue, setTextValue] = useState<string>("10");
   const [frequency, setFrequency] = useState<number>(10);
   const [response, setResponse] = useState<string[]>([]);
   const requestInFlightRef = useRef<boolean>(false);
-  const cooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const setManualCooldown = () => {
-    setButton(false);
-
-    if (cooldownTimeoutRef.current) {
-      clearTimeout(cooldownTimeoutRef.current);
-    }
-
-    cooldownTimeoutRef.current = setTimeout(() => {
-      setButton(true);
-      cooldownTimeoutRef.current = null;
-    }, 5000);
-  };
 
   const getResponse = async () => {
     if (requestInFlightRef.current) {
@@ -31,12 +19,23 @@ export default function SideBar({ open }: { open: boolean }) {
     }
 
     requestInFlightRef.current = true;
+    setIsRequestPending(true);
 
     try {
+      const telemetryWindow = socket.getData().slice(-RACEGPT_SAMPLE_WINDOW);
+
+      if (telemetryWindow.length === 0) {
+        setResponse((prev) => [
+          ...prev,
+          "Waiting for live telemetry before requesting RaceGPT",
+        ]);
+        return;
+      }
+
       const response = await fetch("http://localhost:8000/racegpt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: socket.getData() }),
+        body: JSON.stringify({ data: telemetryWindow }),
       });
 
       if (!response.ok) {
@@ -51,11 +50,11 @@ export default function SideBar({ open }: { open: boolean }) {
       console.error("Error:", error);
     } finally {
       requestInFlightRef.current = false;
+      setIsRequestPending(false);
     }
   };
 
   const handleClick = async () => {
-    setManualCooldown();
     await getResponse();
   };
 
@@ -96,14 +95,6 @@ export default function SideBar({ open }: { open: boolean }) {
       }
     };
   }, [manual, frequency]);
-
-  useEffect(() => {
-    return () => {
-      if (cooldownTimeoutRef.current) {
-        clearTimeout(cooldownTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const text = event.target.value;
@@ -170,9 +161,9 @@ export default function SideBar({ open }: { open: boolean }) {
               outline: "none",
             },
           }}
-          disabled={!button}
+          disabled={isRequestPending}
         >
-          {button ? "Request Response" : "Please Wait"}
+          {isRequestPending ? "Waiting For RaceGPT..." : "Request Response"}
         </Button>
       ) : (
         <TextField
