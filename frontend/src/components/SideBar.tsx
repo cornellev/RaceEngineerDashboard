@@ -138,7 +138,7 @@ export default function SideBar({ open }: { open: boolean }) {
             <h3 className="text-white/55">Nothing to see here</h3>
           </div>
         ) : (
-          <ol className="space-y-2 pl-0 counter-reset-item">
+          <ol className="space-y-2 pl-0 counter-reset-item overflow-y-scroll">
             {response.map((res, i) => {
               return (
                 <li

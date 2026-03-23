@@ -1,5 +1,4 @@
 import Header from "./components/Header";
-import Home from "./pages/Home";
 import Data from "./pages/Data";
 import SideBar from "./components/SideBar";
 
@@ -40,16 +39,8 @@ function App() {
   const [data, setData] = useState<SocketData[]>(() => socket.getData());
 
   const getPageComponent = () => {
-    switch (page) {
-      case "home":
-        return <Home />;
-      case "data":
-        return <Data data={data} />;
-      case "racegpt":
-        return <Data data={data} />;
-      default:
-        return <Data data={data} />;
-    }
+    if (page) return <Data data={data} />;
+    else return null;
   };
 
   useEffect(() => {

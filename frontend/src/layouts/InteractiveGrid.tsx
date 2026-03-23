@@ -228,7 +228,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
     );
 
     if (disabled) {
-      const warnMessage = "Stop spamming the fucking buton";
+      const warnMessage = "Stop spamming the fucking button";
       console.warn(warnMessage);
       if (warn.timerId) clearTimeout(warn.timerId);
       setWarn({
@@ -330,7 +330,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         className="min-h-42.5 lg:col-span-3 lg:row-start-1"
         title="Speed"
       >
-        <div className="flex h-full flex-col justify-end gap-0 xl:gap-3">
+        <div className="flex h-full max-h-full flex-col justify-end gap-0 xl:gap-3">
           <div className="flex flex-wrap xl:flex-nowrap items-center justify-center">
             <GaugeContainer
               width={180}
@@ -347,7 +347,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               <GaugePointer />
             </GaugeContainer>
             <div className="flex flex-1 flex-col xl:items-end text-right items-center mb-3">
-              <strong className="text-5xl font-semibold leading-none text-white 2xl:text-6xl tabular-nums">
+              <strong className="text-4xl lg:text-5xl font-semibold leading-none text-white 2xl:text-6xl tabular-nums">
                 {formatValue(latestSpeed, 1)}
               </strong>
               <span className="mt-1 text-sm uppercase tracking-[0.2em] text-white/55">
@@ -371,7 +371,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
       <DashboardCard
         className="min-h-42.5 lg:col-span-5 lg:row-start-1"
-        title="Run Summary"
+        title={`Run Summary${latest?.latency_ms ? ` | Latency [${Math.round(Math.abs(latest.latency_ms))}ms]` : ""}`}
       >
         <div className="flex h-full flex-col justify-between gap-3">
           <div className="grid grid-cols-2 gap-2">
@@ -452,7 +452,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 ).map((lapTime) => {
                   return (
                     <p
-                      className={`text-sm font-semibold uppercase tracking-[0.26em] text-${lapTime.color}-700 ml-3`}
+                      className={`text-sm font-semibold uppercase tracking-[0.26em] ${lapTime.color} ml-3`}
                     >
                       {formatRunTimer(0, lapTime.value).slice(0, -2)}{" "}
                     </p>
@@ -462,20 +462,18 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             </div>
           ) : null}
           <div className="flex items-center justify-between gap-0 sm:gap-2 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5">
-            <strong className="text-3xl font-semibold leading-none text-white sm:5xl xl:text-6xl tabular-nums">
+            <strong className="text-3xl font-semibold leading-none text-white sm:5xl 2xl:text-6xl tabular-nums">
               {runTimerLabel}
             </strong>
-            {runSession.isRunning ? null : (
-              <p
-                className={`transition-opacity text-white/55 wrap text-center hidden overflow-x-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:block duration-1000 ease-in-out ${warn.value ? "opacity-100" : "opacity-0"}`}
-              >
-                {warn.message}
-              </p>
-            )}
-            <div>
+            <p
+              className={`wrap text-sm text-white/55 text-center overflow-x-scroll hidden sm:block lg:hidden xl:block transition-opacity duration-1000 ease-in-out [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${warn.value ? "opacity-100" : "opacity-0"}`}
+            >
+              {warn.message}
+            </p>
+            <div className="flex justify-between items-center gap-3">
               {runSession.isRunning ? (
                 <button
-                  className={`rounded-full focus:outline-0 border px-3 mr-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition`}
+                  className={`rounded-full focus:outline-0 border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition`}
                   onClick={handleLap}
                 >
                   Lap
@@ -483,7 +481,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               ) : null}
               <button
                 type="button"
-                className={`rounded-full focus:outline-0 border px-3 ml-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition`}
+                className={`rounded-full focus:outline-0 border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition`}
                 onClick={toggleRunTracking}
               >
                 {runSession.isRunning ? "Stop" : "Start"}
@@ -493,7 +491,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         </div>
       </DashboardCard>
 
-      <DashboardCard className="min-h-42.5 lg:col-span-4 lg:row-start-1">
+      <DashboardCard className="min-h-55 lg:col-span-4 lg:row-start-1">
         <MapComponent
           latitude={latest?.gps.lat ?? null}
           longitude={latest?.gps.long ?? null}
@@ -867,11 +865,14 @@ function calculateLapTimes(
 ): { value: number; color: string }[] {
   if (lapTimestamps.length === 0) return [];
   let lapTimes = [
-    { value: lapTimestamps[0] - (startTime ?? 0), color: "gray" },
+    { value: lapTimestamps[0] - (startTime ?? 0), color: "text-white/55" },
   ];
   for (let i = 1; i < lapTimestamps.length; i++) {
     const value = lapTimestamps[i] - lapTimestamps[i - 1];
-    const color = value > lapTimes[lapTimes.length - i].value ? "green" : "red";
+    const color =
+      value < lapTimes[lapTimes.length - i].value
+        ? "text-green-700"
+        : "text-red-700";
     lapTimes = [{ value: value, color: color }, ...lapTimes];
   }
   return lapTimes;

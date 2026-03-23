@@ -182,6 +182,7 @@ class SocketService {
   private reconnectInterval: number = 5000;
   private data: SocketData[] = [];
   private dataTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
+  private latency: number = NaN;
   private readonly DATA_TIMEOUT_MS = 5000;
 
   private constructor() {}
@@ -205,8 +206,11 @@ class SocketService {
     this.socket.onmessage = (event: MessageEvent) => {
       const recvMs = Date.now();
       const envelope = JSON.parse(event.data);
-      const data = normalizeData(envelope.data ?? envelope, asRecord(envelope), recvMs);
-      console.log(`[latency] ${data.latency_ms != null ? data.latency_ms.toFixed(2) + "ms" : "unavailable"}`);
+      const data = normalizeData(
+        envelope.data ?? envelope,
+        asRecord(envelope),
+        recvMs,
+      );
       this.data = [...this.data.slice(-2000), data];
       this.handlers.forEach((handler) => handler(data));
       this.resetDataTimeout();
