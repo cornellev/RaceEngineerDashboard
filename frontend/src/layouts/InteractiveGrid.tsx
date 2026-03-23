@@ -228,7 +228,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
     );
 
     if (disabled) {
-      const warnMessage = "Stop spamming the fucking buton";
+      const warnMessage = "Stop spamming the fucking button";
       console.warn(warnMessage);
       if (warn.timerId) clearTimeout(warn.timerId);
       setWarn({
