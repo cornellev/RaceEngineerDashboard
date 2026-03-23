@@ -502,7 +502,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       </DashboardCard>
 
       <DashboardCard
-        className="min-h-55 lg:col-span-5 lg:row-start-2"
+        className="min-h-55 lg:col-span-4 xl:col-span-5 lg:row-start-2"
         title="Speed v. Time"
       >
         {history.length > 0 ? (
@@ -522,7 +522,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       </DashboardCard>
 
       <DashboardCard
-        className="min-h-55 lg:col-span-3 lg:row-start-2"
+        className="min-h-55 lg:col-span-4 xl:col-span-3 lg:row-start-2"
         title="Signals"
       >
         <div className="grid h-full grid-cols-2 gap-2">
