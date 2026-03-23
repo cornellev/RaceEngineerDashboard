@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { APIProvider, Map, AdvancedMarker } from "@vis.gl/react-google-maps";
 import mapImage from "../assets/map.jpg";
 
@@ -18,6 +19,19 @@ const MapComponent = ({
   };
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapId = import.meta.env.VITE_GOOGLE_MAP_ID || "DEMO_MAP_ID";
+
+  const [isPulsing, setIsPulsing] = useState(false);
+  useEffect(() => {
+    if (latitude !== null && longitude !== null) {
+      setIsPulsing(true);
+
+      const timeout = setTimeout(() => {
+        setIsPulsing(false);
+      }, 400); // duration of pulse
+
+      return () => clearTimeout(timeout);
+    }
+  }, [latitude, longitude]);
 
   if (!apiKey) {
     return (
@@ -44,7 +58,7 @@ const MapComponent = ({
       >
         <Map
           center={{ lat: 42.44638739192644, lng: -76.463079723162 }}
-          defaultZoom={18}
+          defaultZoom={16}
           gestureHandling={interactive ? "greedy" : "none"}
           disableDefaultUI={!interactive}
           keyboardShortcuts={false}
@@ -53,19 +67,33 @@ const MapComponent = ({
           mapTypeControl={false}
           fullscreenControl={false}
           defaultHeading={90}
-          options={{
-            heading: 90,
-            mapId: mapId,
-          }}
+          heading={90}
+          tilt={45}
           mapId={mapId}
         >
           <AdvancedMarker position={position}>
             <div className="relative">
               {/* glow */}
-              <div className="absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-400 opacity-40 blur-sm"></div>
-
+              <div
+                className={`
+                  absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full
+                  bg-blue-400 blur-md transition-all duration-300
+                  ${isPulsing ? "opacity-90 scale-125" : "opacity-40 scale-100"}
+                `}
+              />
               {/* core dot */}
-              <div className="h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500 border-2 border-white"></div>
+              <div
+                className={`
+                  h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full
+                  bg-blue-500 border-2 border-white
+                  transition-transform duration-300
+                  ${isPulsing ? "scale-125" : "scale-100"}
+                `}
+              />
+              {/* ripple effect */}
+              {isPulsing && (
+                <div className="absolute h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-400 opacity-50 animate-ping" />
+              )}
             </div>
           </AdvancedMarker>
         </Map>
