@@ -373,7 +373,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         className="min-h-42.5 lg:col-span-5 lg:row-start-1"
         title="Run Summary"
       >
-        <div className="flex h-full flex-col justify-between gap-1">
+        <div className="flex h-full flex-col justify-between gap-3">
           <div className="grid grid-cols-2 gap-2">
             <MetricPanel
               label="Instant Efficiency"
@@ -644,7 +644,7 @@ function DashboardCard({
 }) {
   return (
     <section
-      className={`flex min-h-90 flex-col overflow-hidden rounded-[1.25rem] border border-white/8 bg-[linear-gradient(180deg,#242424,#252525)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] ${className}`}
+      className={`flex flex-col overflow-hidden rounded-[1.25rem] border border-white/8 bg-[linear-gradient(180deg,#242424,#252525)] p-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] ${className}`}
     >
       {title ? (
         <div className="mb-2 flex items-center justify-between text-left">

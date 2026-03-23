@@ -66,7 +66,7 @@ function App() {
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Header setPage={setPage} setSideBar={setSideBar} sideBar={sideBar} />
-      <div className="w-screen h-[max(7.5vh,67px)] mx-auto px-4 sm:px-6 lg:px-8" />
+      <div className="w-screen min-h-16.75 h-[7.5vh] max-h-19 mx-auto px-4 sm:px-6 lg:px-8" />
       <SideBar open={sideBar} />
       <main
         className={`${sideBar ? "xl:w-[80%]" : "w-screen"} h-fit transition-all duration-300 ease-in-out m-0 p-0`}
