@@ -5,7 +5,6 @@ import mapImage from "../assets/map.jpg";
 const MapComponent = ({
   latitude,
   longitude,
-  interactive = true,
   className = "",
 }: {
   latitude: number | null;
@@ -24,6 +23,43 @@ const MapComponent = ({
   const [isDragging, setIsDragging] = useState(false);
   const lastX = useRef<number | null>(null);
   const [isPulsing, setIsPulsing] = useState(false);
+
+  const [zoom, setZoom] = useState(16);
+  const minZoom = 14;
+  const maxZoom = 20;
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setZoom((prev) => {
+      let delta = e.deltaY < 0 ? 0.1 : -0.1;
+      let newZoom = prev + delta;
+      if (newZoom < minZoom) newZoom = minZoom;
+      if (newZoom > maxZoom) newZoom = maxZoom;
+      return newZoom;
+    });
+  };
+
+  useEffect(() => {
+    const container = document.getElementById("map-container");
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setZoom((prev) => {
+        let delta = e.deltaY < 0 ? 0.1 : -0.1;
+        let newZoom = prev + delta;
+        if (newZoom < minZoom) newZoom = minZoom;
+        if (newZoom > maxZoom) newZoom = maxZoom;
+        return newZoom;
+      });
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
 
   useEffect(() => {
     if (latitude !== null && longitude !== null) {
@@ -58,7 +94,8 @@ const MapComponent = ({
   return (
     <APIProvider apiKey={apiKey}>
       <div
-        className={`h-full w-full overflow-hidden rounded-[1.1rem] ${className}`}
+        id="map-container"
+        className={`h-full w-full overflow-hidden rounded-[1.1rem] cursor-grab hover:cursor-grabbing ${className}`}
         onMouseDown={(e) => {
           e.preventDefault();
           setIsDragging(true);
@@ -77,11 +114,13 @@ const MapComponent = ({
 
           setHeading((h) => (h + deltaX * 0.5) % 360); // sensitivity tweak
         }}
+        onWheel={handleWheel}
       >
         <Map
           center={{ lat: 42.44638739192644, lng: -76.463079723162 }}
           defaultZoom={16}
-          gestureHandling="greedy"
+          zoom={zoom}
+          gestureHandling="none"
           disableDefaultUI
           keyboardShortcuts={false}
           streetViewControl={false}
