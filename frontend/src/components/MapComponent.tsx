@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { APIProvider, Map, AdvancedMarker } from "@vis.gl/react-google-maps";
 import mapImage from "../assets/map.jpg";
 
@@ -20,7 +20,11 @@ const MapComponent = ({
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapId = import.meta.env.VITE_GOOGLE_MAP_ID || "DEMO_MAP_ID";
 
+  const [heading, setHeading] = useState(90);
+  const [isDragging, setIsDragging] = useState(false);
+  const lastX = useRef<number | null>(null);
   const [isPulsing, setIsPulsing] = useState(false);
+
   useEffect(() => {
     if (latitude !== null && longitude !== null) {
       setIsPulsing(true);
@@ -55,28 +59,52 @@ const MapComponent = ({
     <APIProvider apiKey={apiKey}>
       <div
         className={`h-full w-full overflow-hidden rounded-[1.1rem] ${className}`}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+          lastX.current = e.clientX;
+        }}
+        onMouseUp={() => {
+          setIsDragging(false);
+          lastX.current = null;
+        }}
+        onMouseLeave={() => setIsDragging(false)}
+        onMouseMove={(e) => {
+          if (!isDragging || lastX.current === null) return;
+
+          const deltaX = e.clientX - lastX.current;
+          lastX.current = e.clientX;
+
+          setHeading((h) => (h + deltaX * 0.5) % 360); // sensitivity tweak
+        }}
       >
         <Map
           center={{ lat: 42.44638739192644, lng: -76.463079723162 }}
           defaultZoom={16}
-          gestureHandling={interactive ? "greedy" : "none"}
-          disableDefaultUI={!interactive}
+          gestureHandling="greedy"
+          disableDefaultUI
           keyboardShortcuts={false}
-          zoomControl={interactive}
           streetViewControl={false}
           mapTypeControl={false}
           fullscreenControl={false}
           defaultHeading={90}
-          heading={90}
-          tilt={45}
+          heading={heading}
+          tilt={35}
           mapId={mapId}
+          options={{
+            clickableIcons: false,
+          }}
         >
-          <AdvancedMarker position={position}>
+          <AdvancedMarker
+            position={position}
+            anchorLeft="-50%"
+            anchorTop="-50%"
+          >
             <div className="relative">
               {/* glow */}
               <div
                 className={`
-                  absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full
+                  absolute h-8 w-8 rounded-full
                   bg-blue-400 blur-md transition-all duration-300
                   ${isPulsing ? "opacity-90 scale-125" : "opacity-40 scale-100"}
                 `}
@@ -84,7 +112,7 @@ const MapComponent = ({
               {/* core dot */}
               <div
                 className={`
-                  h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full
+                  h-3 w-3 rounded-full
                   bg-blue-500 border-2 border-white
                   transition-transform duration-300
                   ${isPulsing ? "scale-125" : "scale-100"}
@@ -92,7 +120,7 @@ const MapComponent = ({
               />
               {/* ripple effect */}
               {isPulsing && (
-                <div className="absolute h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-400 opacity-50 animate-ping" />
+                <div className="absolute h-10 w-10 rounded-full bg-blue-400 opacity-50 animate-ping" />
               )}
             </div>
           </AdvancedMarker>
