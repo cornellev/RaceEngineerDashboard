@@ -1,8 +1,6 @@
-import { useState } from "react";
 import logo from "/logo.svg";
 
 export default function Header(props: {
-  setPage: (page: string) => void;
   setSideBar: (open: boolean) => void;
   sideBar: boolean;
 }) {
@@ -27,7 +25,6 @@ export default function Header(props: {
             href="#racegpt"
             className="transition-colors duration-200 font-medium hidden sm:block"
             onClick={() => {
-              props.setPage("racegpt");
               props.setSideBar(!props.sideBar);
             }}
           >
@@ -36,7 +33,6 @@ export default function Header(props: {
           <a
             href="#data"
             className="transition-colors duration-200 font-medium"
-            onClick={() => props.setPage("data")}
           >
             Data
           </a>
