@@ -376,8 +376,8 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         className="min-h-42.5 lg:col-span-5 lg:row-start-1"
         title={`Run Summary${latest?.latency_ms ? ` | Latency [${Math.round(Math.abs(latest.latency_ms))}ms]` : ""}`}
       >
-        <div className="flex h-full flex-col justify-between gap-3">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="flex h-full flex-col justify-between gap-4 lg:gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <MetricPanel
               label="Instant Efficiency"
               value={
@@ -396,7 +396,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               }
             />
             <MetricPanel
-              label="Recording efficiency"
+              label="Average Efficiency"
               value={
                 runSession.energyKilowattHours > 0
                   ? formatEfficiency(runEfficiencyRatio)
@@ -444,7 +444,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             />
           </div>
           {runSession.lapTimes.length >= 1 ? (
-            <div className="flex justify-start w-full">
+            <div className="flex justify-start w-full px-3">
               <h2 className="text-sm font-semibold uppercase tracking-[0.26em] text-white/78">
                 Laps
               </h2>
