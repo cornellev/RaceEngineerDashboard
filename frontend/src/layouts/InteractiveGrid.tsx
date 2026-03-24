@@ -112,7 +112,10 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   const powerHistory = history.map((sample) =>
     roundTo(calculatePowerKilowatts(sample), 2),
   );
-  const xAxisLabels = history.map((sample) => {
+  const xAxisLabels = history.map((_, index) => {
+    return index.toString();
+  });
+  const xAxisTimestamps = history.map((sample) => {
     return formatElapsed(
       sample.global_ts,
       history[history.length - 1]?.global_ts ?? sample.global_ts,
@@ -508,6 +511,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             accentColor="#fb923c"
             currentValue={`${formatValue(latestSpeed, 1)} mph`}
             data={speedHistory.map((speed) => roundTo(speed * 2.23694, 1))}
+            timestamps={xAxisTimestamps}
             labels={xAxisLabels}
             yMax={Math.max(
               SPEEDOMETER_MAX_MPH,
@@ -617,6 +621,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           <CompactChart
             accentColor="#22c55e"
             currentValue={`${formatValue(latestPowerKw, 2)} kW`}
+            timestamps={xAxisTimestamps}
             data={powerHistory}
             labels={xAxisLabels}
             yMax={4.5}
@@ -718,12 +723,14 @@ function EmptyTelemetryState({ compact = false }: { compact?: boolean }) {
 function CompactChart({
   data,
   labels,
+  timestamps,
   currentValue,
   accentColor,
   yMax,
 }: {
   data: number[];
   labels: string[];
+  timestamps: string[];
   currentValue: string;
   accentColor: string;
   yMax?: number;
@@ -746,8 +753,7 @@ function CompactChart({
             scaleType: "point",
             data: labels,
             height: 16,
-            tickLabelInterval: (_, index) => index % 20 === 0,
-            tickInterval: (_, index) => index % 20 === 0,
+            valueFormatter: (index) => timestamps[index],
             disableLine: true,
             disableTicks: true,
           },
@@ -759,7 +765,8 @@ function CompactChart({
             color: accentColor,
             showMark: false,
             area: true,
-            valueFormatter: (value) => `${value} ${currentValue.split(" ")[1]}`,
+            valueFormatter: (value: any) =>
+              `${value} ${currentValue.split(" ")[1]}`,
           },
           {
             data: latestPointOnly,
