@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { APIProvider, Map, AdvancedMarker } from "@vis.gl/react-google-maps";
 import mapImage from "../assets/map.jpg";
+import locations from "../utils/locations";
 
 const MapComponent = ({
   latitude,
@@ -117,7 +118,7 @@ const MapComponent = ({
         onWheel={handleWheel}
       >
         <Map
-          center={{ lat: 39.79511968382295, lng: -86.23477335003211 }}
+          center={locations["B-Lot"]}
           defaultZoom={12}
           zoom={zoom}
           gestureHandling="none"
