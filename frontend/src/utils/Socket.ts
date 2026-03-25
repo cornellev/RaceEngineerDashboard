@@ -182,7 +182,6 @@ class SocketService {
   private reconnectInterval: number = 5000;
   private data: SocketData[] = [];
   private dataTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
-  private latency: number = NaN;
   private readonly DATA_TIMEOUT_MS = 5000;
 
   private constructor() {}
