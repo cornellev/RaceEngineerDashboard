@@ -26,8 +26,8 @@ export default function SideBar({ open }: { open: boolean }) {
 
       if (telemetryWindow.length === 0) {
         setResponse((prev) => [
+          "Waiting for live telemetry data for RaceGPT",
           ...prev,
-          "Waiting for live telemetry before requesting RaceGPT",
         ]);
         return;
       }
@@ -43,10 +43,10 @@ export default function SideBar({ open }: { open: boolean }) {
       }
 
       const result = await response.json();
-      setResponse((prev) => [...prev, result.verdict]);
+      setResponse((prev) => [result.verdict, ...prev]);
       console.log("Success:", result);
     } catch (error) {
-      setResponse((prev) => [...prev, "Error: RaceGPT failed to respond"]);
+      setResponse((prev) => ["Error: RaceGPT failed to respond", ...prev]);
       console.error("Error:", error);
     } finally {
       requestInFlightRef.current = false;
@@ -123,13 +123,13 @@ export default function SideBar({ open }: { open: boolean }) {
           <p>A U T O</p>
         </SideBarTile>
       </div>
-      <SideBarTile className="h-full flex flex-col-reverse overflow-y-scroll justify-start">
+      <SideBarTile className="h-full">
         {response.length == 0 ? (
           <div className="h-full w-full flex justify-center items-center">
             <h3 className="text-white/55">Nothing to see here</h3>
           </div>
         ) : (
-          <ol className="space-y-2 pl-0 counter-reset-item overflow-y-scroll">
+          <ol className="pl-0 counter-reset-item flex flex-col-reverse justify-between gap-1 overflow-y-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {response.map((res, i) => {
               return (
                 <li
@@ -137,7 +137,7 @@ export default function SideBar({ open }: { open: boolean }) {
                   className={`flex border border-white/8 bg-black/18 px-3 py-2.5 text-left text-wrap rounded-md ${res.split(" ")[0] === "Error:" ? "text-[#c41e3a]" : "text-slate-100"}`}
                 >
                   <span className="block h-full mr-2 font-black">
-                    {i + 1}.{" "}
+                    {response.length - i}.{" "}
                   </span>
                   {res}
                 </li>
