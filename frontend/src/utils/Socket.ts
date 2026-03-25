@@ -210,7 +210,7 @@ class SocketService {
         asRecord(envelope),
         recvMs,
       );
-      this.data = [...this.data.slice(-2000), data];
+      this.data = [...this.data.slice(-1200), data];
       this.handlers.forEach((handler) => handler(data));
       this.resetDataTimeout();
     };
