@@ -606,7 +606,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               />
               <SignalTile
                 label="BR"
-                value={`${latest?.rpm_back.rpm_right ? Math.round(latest.rpm_back.rpm_right) : 500}`}
+                value={`${latest?.rpm_back.rpm_right ? Math.round(latest.rpm_back.rpm_right) : 0}`}
               />
             </div>
           </SignalTile>
