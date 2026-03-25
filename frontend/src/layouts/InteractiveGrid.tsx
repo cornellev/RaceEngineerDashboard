@@ -494,7 +494,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         </div>
       </DashboardCard>
 
-      <DashboardCard className="min-h-55 lg:col-span-4 lg:row-start-1">
+      <DashboardCard className="min-h-200 lg:min-h-55 lg:col-span-4 lg:row-start-1">
         <MapComponent
           latitude={latest?.gps.lat ?? null}
           longitude={latest?.gps.long ?? null}
@@ -503,7 +503,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       </DashboardCard>
 
       <DashboardCard
-        className="min-h-55 lg:col-span-4 xl:col-span-5 lg:row-start-2"
+        className="min-h-100 lg:min-h-55 lg:col-span-4 xl:col-span-5 lg:row-start-2"
         title="Speed v. Time"
       >
         {history.length > 0 ? (
@@ -524,7 +524,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       </DashboardCard>
 
       <DashboardCard
-        className="min-h-55 lg:col-span-4 xl:col-span-3 lg:row-start-2"
+        className="min-h-100 lg:min-h-55 lg:col-span-4 xl:col-span-3 lg:row-start-2"
         title="Signals (Calibration WIP)"
       >
         <div className="grid h-full grid-cols-2 gap-2">
@@ -614,7 +614,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       </DashboardCard>
 
       <DashboardCard
-        className="min-h-55 lg:col-span-4 lg:row-start-2"
+        className="min-h-100 lg:min-h-55 lg:col-span-4 lg:row-start-2"
         title="Power v. Time"
       >
         {history.length > 0 ? (

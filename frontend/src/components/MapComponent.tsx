@@ -24,7 +24,7 @@ const MapComponent = ({
   const lastX = useRef<number | null>(null);
   const [isPulsing, setIsPulsing] = useState(false);
 
-  const [zoom, setZoom] = useState(16);
+  const [zoom, setZoom] = useState(15);
   const minZoom = 14;
   const maxZoom = 20;
 
@@ -117,8 +117,8 @@ const MapComponent = ({
         onWheel={handleWheel}
       >
         <Map
-          center={{ lat: 42.44638739192644, lng: -76.463079723162 }}
-          defaultZoom={16}
+          center={{ lat: 39.79511968382295, lng: -86.23477335003211 }}
+          defaultZoom={12}
           zoom={zoom}
           gestureHandling="none"
           disableDefaultUI
@@ -126,7 +126,7 @@ const MapComponent = ({
           streetViewControl={false}
           mapTypeControl={false}
           fullscreenControl={false}
-          defaultHeading={90}
+          defaultHeading={135}
           heading={heading}
           tilt={35}
           mapId={mapId}
