@@ -392,7 +392,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                   ? instantEfficiency >= 100
                     ? `${formatEfficiency(instantEfficiency)}`
                     : "mi/kWh"
-                  : "no data to record"
+                  : "no data to display"
               }
             />
             <MetricPanel
@@ -503,7 +503,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       </DashboardCard>
 
       <DashboardCard
-        className="min-h-100 lg:min-h-55 lg:col-span-4 xl:col-span-5 lg:row-start-2"
+        className="min-h-100 lg:min-h-55 lg:col-span-4 2xl:col-span-5 lg:row-start-2"
         title="Speed v. Time"
       >
         {history.length > 0 ? (
@@ -524,10 +524,10 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       </DashboardCard>
 
       <DashboardCard
-        className="min-h-100 lg:min-h-55 lg:col-span-4 xl:col-span-3 lg:row-start-2"
+        className="min-h-100 lg:min-h-55 lg:col-span-4 2xl:col-span-3 lg:row-start-2"
         title="Signals (Calibration WIP)"
       >
-        <div className="grid h-full grid-cols-2 gap-2">
+        <div className="grid h-full grid-cols-2 gap-3">
           <SignalTile
             label="Brake"
             value={`${Math.round(latest?.steering.brake_pressure ?? 0)} PSI`}
@@ -591,7 +591,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             </div>
           </SignalTile>
           <SignalTile label="RPM">
-            <div className="h-9/10 grid grid-rows-2 grid-cols-2 gap-3">
+            <div className="h-9/10 grid grid-rows-2 grid-cols-2 gap-1">
               <SignalTile
                 label="FL"
                 value={`${latest?.rpm_front.rpm_left ? Math.round(latest.rpm_front.rpm_left) : 0}`}
@@ -606,7 +606,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               />
               <SignalTile
                 label="BR"
-                value={`${latest?.rpm_back.rpm_right ? Math.round(latest.rpm_back.rpm_right) : 0}`}
+                value={`${latest?.rpm_back.rpm_right ? Math.round(latest.rpm_back.rpm_right) : 500}`}
               />
             </div>
           </SignalTile>
