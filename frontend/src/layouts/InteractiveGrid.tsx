@@ -551,7 +551,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               <Gauge
                 value={
                   latest?.steering.turn_angle
-                    ? 50 + (latest.steering.turn_angle - 1200) / 100
+                    ? 50 + latest.steering.turn_angle / 100
                     : 50
                 }
                 startAngle={-110}
@@ -574,7 +574,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                   },
                 }}
                 text={() =>
-                  `${Math.round(latest?.steering.turn_angle ? (latest.steering.turn_angle - 1200) / 100 : 0)}°`
+                  `${Math.round(latest?.steering.turn_angle ? latest.steering.turn_angle / 100 : 0)}°`
                 }
                 skipAnimation
               />
