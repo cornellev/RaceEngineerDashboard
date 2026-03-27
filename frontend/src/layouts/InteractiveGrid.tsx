@@ -333,7 +333,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         className="min-h-42.5 lg:col-span-3 lg:row-start-1"
         title="Speed"
       >
-        <div className="flex h-full max-h-full flex-col justify-end gap-0 xl:gap-3">
+        <div className="flex h-full max-h-full flex-col justify-start gap-0 xl:gap-3">
           <div className="flex flex-wrap xl:flex-nowrap items-center justify-center">
             <GaugeContainer
               width={180}
@@ -547,7 +547,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             />
           </SignalTile>
           <SignalTile label="Steer">
-            <div className="h-4/5">
+            <div className="h-4/5 w-full">
               <Gauge
                 value={
                   latest?.steering.turn_angle
