@@ -328,12 +328,12 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   };
 
   return (
-    <div className="grid min-h-full w-full text-white grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(100,0.9fr)_minmax(100,1fr)] m-0 px-3 pt-2 pb-3.5 sm:px-4 lg:px-5">
+    <div className="grid min-h-full w-full text-white grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(100,0.9fr)_minmax(100,1fr)] m-0 px-3 pt-2 pb-3.5 sm:px-4 lg:px-5 lg:auto-rows-fr">
       <DashboardCard
-        className="min-h-42.5 lg:col-span-3 lg:row-start-1"
+        className="min-h-42.5 lg:col-span-3 lg:row-start-1 auto-rows-fr"
         title="Speed"
       >
-        <div className="flex h-full max-h-full flex-col justify-start gap-0 xl:gap-3">
+        <div className="flex h-full max-h-full flex-col justify-end gap-0 xl:gap-3">
           <div className="flex flex-wrap xl:flex-nowrap items-center justify-center">
             <GaugeContainer
               width={180}
@@ -527,7 +527,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         className="min-h-100 lg:min-h-55 lg:col-span-4 2xl:col-span-3 lg:row-start-2"
         title="Signals (Calibration WIP)"
       >
-        <div className="grid h-full grid-cols-2 gap-3">
+        <div className="grid h-full grid-cols-2 gap-3 rows-auto-fr">
           <SignalTile
             label="Brake"
             value={`${Math.round(latest?.steering.brake_pressure ?? 0)} PSI`}
@@ -584,22 +584,22 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             label="Throttle"
             value={`${formatThrottle(latest?.motor.throttle ?? 0)}%`}
           >
-            <div className="h-full">
-              <VerticalThrottle
-                value={Math.min(latest?.motor.throttle ?? 0, 100)}
-              />
-            </div>
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(
+                latest?.steering.brake_pressure
+                  ? latest.steering.brake_pressure / 6
+                  : 0,
+                100,
+              )}
+              sx={{
+                height: 20,
+                borderRadius: 2,
+              }}
+            />
           </SignalTile>
           <SignalTile label="RPM">
-            <div className="h-9/10 grid grid-rows-2 grid-cols-2 gap-1">
-              <SignalTile
-                label="FL"
-                value={`${latest?.rpm_front.rpm_left ? Math.round(latest.rpm_front.rpm_left) : 0}`}
-              />
-              <SignalTile
-                label="FR"
-                value={`${latest?.rpm_front.rpm_right ? Math.round(latest.rpm_front.rpm_right) : 0}`}
-              />
+            <div className="h-9/10 grid grid-rows-2 grid-cols-1 gap-1">
               <SignalTile
                 label="BL"
                 value={`${latest?.rpm_back.rpm_left ? Math.round(latest.rpm_back.rpm_left) : 0}`}
@@ -830,10 +830,11 @@ function VerticalThrottle({ value }: { value: number }) {
   return (
     <div
       style={{
-        width: 120,
-        marginTop: "min(0.7vh,0.4vw)",
+        height: "100%",
+        aspectRatio: 1 / 1,
+        marginTop: "min(0.6vh,0.3vw)",
         display: "flex",
-        alignItems: "center",
+        alignItems: "start",
         justifyContent: "center",
       }}
     >
@@ -843,7 +844,7 @@ function VerticalThrottle({ value }: { value: number }) {
         sx={{
           height: 30,
           width: "100%", // becomes height after rotation
-          transform: "translateX(-120px) rotate(-90deg)",
+          transform: "translateX(-100%) rotate(-90deg)",
           transformOrigin: "top right",
           borderRadius: "10px",
         }}
