@@ -509,7 +509,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         {history.length > 0 ? (
           <CompactChart
             accentColor="#fb923c"
-            currentValue={`${formatValue(latestSpeed, 1)} mph`}
+            currentValue={`${formatValue((speedHistory.reduce((accumulator, currentValue) => accumulator + currentValue) / (speedHistory.length > 0 ? speedHistory.length : 1)) * 2.23694, 1)} mph`}
             data={speedHistory.map((speed) => roundTo(speed * 2.23694, 1))}
             timestamps={xAxisTimestamps}
             labels={xAxisLabels}
