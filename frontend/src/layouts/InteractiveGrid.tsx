@@ -878,7 +878,7 @@ function calculateLapTimes(
   for (let i = 1; i < lapTimestamps.length; i++) {
     const value = lapTimestamps[i] - lapTimestamps[i - 1];
     const color =
-      value < lapTimes[lapTimes.length - i].value
+      value < 210 * TIMESTAMP_UNITS_PER_SECOND
         ? "text-green-700"
         : "text-red-700";
     lapTimes = [{ value: value, color: color }, ...lapTimes];
