@@ -328,9 +328,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   };
 
   return (
-    <div className="grid min-h-full w-full text-white grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(100,0.9fr)_minmax(100,1fr)] m-0 px-3 pt-2 pb-3.5 sm:px-4 lg:px-5 lg:auto-rows-fr">
+    <div className="grid min-h-full w-full text-white grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(100,1fr)_minmax(100,0.9fr)] m-0 px-3 pt-2 pb-3.5 sm:px-4 lg:px-5">
       <DashboardCard
-        className="min-h-42.5 lg:min-h-80 lg:col-span-3 lg:row-start-1 auto-rows-fr"
+        className="min-h-42.5 lg:min-h-100 lg:col-span-3 lg:row-start-1 auto-rows-fr"
         title="Speed"
       >
         <div className="flex h-full max-h-full flex-col justify-end gap-0 xl:gap-3">
@@ -373,7 +373,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       </DashboardCard>
 
       <DashboardCard
-        className="min-h-42.5 lg:col-span-5 lg:row-start-1"
+        className="min-h-42.5 lg:min-h-100 lg:col-span-5 lg:row-start-1"
         title={`Run Summary${latest?.latency_ms ? ` | Latency [${Math.round(Math.abs(latest.latency_ms))}ms]` : ""}`}
       >
         <div className="flex h-full flex-col justify-between gap-4 lg:gap-2">
@@ -494,7 +494,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         </div>
       </DashboardCard>
 
-      <DashboardCard className="min-h-200 lg:min-h-55 lg:col-span-4 lg:row-start-1">
+      <DashboardCard className="min-h-200 lg:min-h-100 lg:col-span-4 lg:row-start-1">
         <MapComponent
           latitude={latest?.gps.lat ?? null}
           longitude={latest?.gps.long ?? null}
