@@ -529,87 +529,21 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       >
         <div className="grid h-full grid-cols-2 gap-3 rows-auto-fr">
           <SignalTile
-            label="Brake"
-            value={`${Math.round(latest?.steering.brake_pressure ?? 0)} PSI`}
-          >
-            <LinearProgress
-              variant="determinate"
-              value={Math.min(
-                latest?.steering.brake_pressure
-                  ? latest.steering.brake_pressure / 6
-                  : 0,
-                100,
-              )}
-              sx={{
-                height: 10,
-                borderRadius: 2,
-              }}
-            />
-          </SignalTile>
-          <SignalTile label="Steer">
-            <div className="h-4/5 w-full">
-              <Gauge
-                value={
-                  latest?.steering.turn_angle
-                    ? 50 + latest.steering.turn_angle / 100
-                    : 50
-                }
-                startAngle={-110}
-                endAngle={110}
-                sx={{
-                  [`& .${gaugeClasses.referenceArc}`]: {
-                    fill: "#48657C",
-                  },
-                  [`& .${gaugeClasses.valueArc}`]: {
-                    fill: "#90CAF9",
-                  },
-                  [`& .${gaugeClasses.valueText}`]: {
-                    fontVariantNumeric: "tabular-nums",
-                    fontWeight: 500,
-                    fontSize: 22,
-                    transform: "translate(0px, 0px)",
-                  },
-                  [`& .${gaugeClasses.valueText} text`]: {
-                    fill: "white",
-                  },
-                }}
-                text={() =>
-                  `${Math.round(latest?.steering.turn_angle ? latest.steering.turn_angle / 100 : 0)}°`
-                }
-                skipAnimation
-              />
-            </div>
-          </SignalTile>
+            label="Current"
+            value={`${formatValue(latest?.power.current ?? 0, 1)} A`}
+          ></SignalTile>
           <SignalTile
-            label="Throttle"
-            value={`${formatThrottle(latest?.motor.throttle ?? 0)}%`}
-          >
-            <LinearProgress
-              variant="determinate"
-              value={Math.min(
-                latest?.steering.brake_pressure
-                  ? latest.steering.brake_pressure / 6
-                  : 0,
-                100,
-              )}
-              sx={{
-                height: 20,
-                borderRadius: 2,
-              }}
-            />
-          </SignalTile>
-          <SignalTile label="RPM">
-            <div className="h-9/10 grid grid-rows-2 grid-cols-1 gap-1">
-              <SignalTile
-                label="BL"
-                value={`${latest?.rpm_back.rpm_left ? Math.round(latest.rpm_back.rpm_left) : 0}`}
-              />
-              <SignalTile
-                label="BR"
-                value={`${latest?.rpm_back.rpm_right ? Math.round(latest.rpm_back.rpm_right) : 0}`}
-              />
-            </div>
-          </SignalTile>
+            label="Voltage"
+            value={`${formatValue(latest?.power.voltage ?? 0, 1)} V`}
+          ></SignalTile>
+          <SignalTile
+            label="RPM"
+            value={`${formatValue(latest?.rpm_back.rpm_left ?? 0, 0)} RPM`}
+          ></SignalTile>
+          <SignalTile
+            label="RPM"
+            value={`${formatValue(latest?.rpm_back.rpm_right ?? 0, 0)} RPM`}
+          ></SignalTile>
         </div>
       </DashboardCard>
 
