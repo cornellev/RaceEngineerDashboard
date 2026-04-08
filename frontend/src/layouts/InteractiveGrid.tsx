@@ -568,9 +568,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               data: currentHistory,
               currentValue: `${formatValue(latest?.power.current ?? 0, 1)} A`,
               unit: "A",
-              accentColor: "#22c55e99",
+              accentColor: "#22c55e55",
               yMax: Math.max(
-                10,
+                50,
                 Math.ceil(
                   Math.max(...currentHistory, latest?.power.current ?? 0) / 10,
                 ) * 10,

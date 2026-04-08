@@ -6,6 +6,40 @@ import locations from "../utils/locations";
 const locationOptions = ["B-Lot", "Indianapolis Motor Speedway"] as const;
 type TrackLocation = (typeof locationOptions)[number];
 
+const IMS_TURN_MARKERS = [
+  { id: 1, lat: 39.799075111676224, lng: -86.23865549660229 },
+  { id: 2, lat: 39.799295129847344, lng: -86.2377705786008 },
+  { id: 3, lat: 39.80037913540656, lng: -86.23760192842447 },
+  { id: 4, lat: 39.801163421941126, lng: -86.23585301585724 },
+  { id: 5, lat: 39.799488293418236, lng: -86.23539460045293 },
+  { id: 6, lat: 39.79902455557395, lng: -86.23514440526584 },
+  { id: 7, lat: 39.79236342353246, lng: -86.23463847050992 },
+  { id: 8, lat: 39.792192922155095, lng: -86.23324845441954 },
+  { id: 9, lat: 39.791596164009725, lng: -86.2326769568461 },
+  { id: 10, lat: 39.791533431721575, lng: -86.23125135300353 },
+  { id: 11, lat: 39.788861077810736, lng: -86.23156241589633 },
+  { id: 12, lat: 39.78827959633701, lng: -86.23528251099486 },
+  { id: 13, lat: 39.789553967953125, lng: -86.23556880408972 },
+  { id: 14, lat: 39.789262796749206, lng: -86.2375730529455 },
+] as const;
+
+const IMS_FLAG_MARKERS = [
+  {
+    id: "green-flag",
+    lat: 39.793509866527366,
+    lng: -86.2388742590957,
+    label: "Green",
+    variant: "green" as const,
+  },
+  {
+    id: "checkered-flag",
+    lat: 39.793164176215356,
+    lng: -86.23886986975018,
+    label: "Finish",
+    variant: "checkered" as const,
+  },
+] as const;
+
 const MapComponent = ({
   latitude,
   longitude,
@@ -34,6 +68,7 @@ const MapComponent = ({
   const [zoom, setZoom] = useState(15);
   const minZoom = 14;
   const maxZoom = 20;
+  const showImsMarkers = selectedLocation === "Indianapolis Motor Speedway";
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     setZoom((prev) => {
@@ -145,6 +180,34 @@ const MapComponent = ({
             clickableIcons: false,
           }}
         >
+          {showImsMarkers
+            ? IMS_TURN_MARKERS.map((marker) => (
+                <AdvancedMarker
+                  key={`turn-${marker.id}`}
+                  position={{ lat: marker.lat, lng: marker.lng }}
+                  anchorLeft="-50%"
+                  anchorTop="-50%"
+                >
+                  <TurnMarkerLabel turn={marker.id} zoom={zoom} />
+                </AdvancedMarker>
+              ))
+            : null}
+          {showImsMarkers
+            ? IMS_FLAG_MARKERS.map((marker) => (
+                <AdvancedMarker
+                  key={marker.id}
+                  position={{ lat: marker.lat, lng: marker.lng }}
+                  anchorLeft="-50%"
+                  anchorTop="-85%"
+                >
+                  <FlagMarker
+                    label={marker.label}
+                    variant={marker.variant}
+                    zoom={zoom}
+                  />
+                </AdvancedMarker>
+              ))
+            : null}
           <AdvancedMarker
             position={position}
             anchorLeft="-50%"
@@ -179,5 +242,63 @@ const MapComponent = ({
     </APIProvider>
   );
 };
+
+function TurnMarkerLabel({ turn, zoom }: { turn: number; zoom: number }) {
+  const isClose = zoom >= 17;
+
+  return (
+    <div
+      className={`flex items-center justify-center rounded-full border border-white/80 bg-slate-950/88 font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,0.32)] backdrop-blur-sm ${
+        isClose ? "h-6 min-w-6 px-1.5 text-[11px]" : "h-5 min-w-5 px-1 text-[9px]"
+      }`}
+      aria-label={`Turn ${turn}`}
+      title={`Turn ${turn}`}
+    >
+      {turn}
+    </div>
+  );
+}
+
+function FlagMarker({
+  label,
+  variant,
+  zoom,
+}: {
+  label: string;
+  variant: "green" | "checkered";
+  zoom: number;
+}) {
+  const isClose = zoom >= 17;
+  const poleHeightClass = isClose ? "h-7" : "h-6";
+  const poleTopClass = isClose ? "top-1.5" : "top-1";
+  const badgeClass = isClose ? "h-4 w-5" : "h-3.5 w-4";
+  const labelClass = isClose ? "mt-1 text-[8px]" : "mt-0.5 text-[7px]";
+
+  return (
+    <div
+      className="flex flex-col items-center"
+      aria-label={label}
+      title={label}
+    >
+      <div className="relative">
+        <div
+          className={`absolute left-0.5 ${poleTopClass} ${poleHeightClass} w-[2px] rounded-full bg-white/85 shadow-[0_0_10px_rgba(0,0,0,0.22)]`}
+        />
+        <div
+          className={`relative ml-1 rounded-[3px] border border-white/75 shadow-[0_4px_12px_rgba(0,0,0,0.28)] ${badgeClass} ${
+            variant === "green"
+              ? "bg-emerald-500"
+              : "bg-[conic-gradient(from_90deg,#ffffff_0_25%,#111827_25%_50%,#ffffff_50%_75%,#111827_75%_100%)]"
+          }`}
+        />
+      </div>
+      <div
+        className={`rounded-full border border-white/10 bg-slate-950/76 px-1.5 py-0.5 font-medium uppercase tracking-[0.12em] text-white/82 backdrop-blur-sm ${labelClass}`}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
 
 export default MapComponent;
