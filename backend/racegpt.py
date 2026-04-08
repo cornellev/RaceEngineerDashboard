@@ -8,7 +8,9 @@ import httpx
 
 def _normalize_racegpt_url() -> str:
     configured = os.getenv("RACEGPT_URL") or os.getenv(
-        "RACEGPT_WS_URI", "http://100.110.39.54:8000/analyze"
+        "RACEGPT_WS_URL", "http://100.110.39.54:8000/analyze"
+        # Ollama Jetson URL: 100.94.168.56
+        # vLLM Thor URL: 100.94.168.56
     )
     parts = urlsplit(configured)
 
