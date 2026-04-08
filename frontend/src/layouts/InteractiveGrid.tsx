@@ -112,6 +112,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   const powerHistory = history.map((sample) =>
     roundTo(calculatePowerKilowatts(sample), 2),
   );
+  const currentHistory = history.map((sample) =>
+    roundTo(sample.power.current, 1),
+  );
   const xAxisLabels = history.map((_, index) => {
     return index.toString();
   });
@@ -510,6 +513,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           <CompactChart
             accentColor="#fb923c"
             currentValue={`${formatValue((speedHistory.reduce((accumulator, currentValue) => accumulator + currentValue) / (speedHistory.length > 0 ? speedHistory.length : 1)) * 2.23694, 1)} mph`}
+            unit="mph"
             data={speedHistory.map((speed) => roundTo(speed * 2.23694, 1))}
             timestamps={xAxisTimestamps}
             labels={xAxisLabels}
@@ -555,10 +559,23 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           <CompactChart
             accentColor="#22c55e"
             currentValue={`${formatValue(latestPowerKw, 2)} kW`}
+            unit="kW"
             timestamps={xAxisTimestamps}
             data={powerHistory}
             labels={xAxisLabels}
             yMax={4.5}
+            secondarySeries={{
+              data: currentHistory,
+              currentValue: `${formatValue(latest?.power.current ?? 0, 1)} A`,
+              unit: "A",
+              accentColor: "#22c55e99",
+              yMax: Math.max(
+                10,
+                Math.ceil(
+                  Math.max(...currentHistory, latest?.power.current ?? 0) / 10,
+                ) * 10,
+              ),
+            }}
           />
         ) : (
           <EmptyTelemetryState compact />
@@ -659,18 +676,31 @@ function CompactChart({
   labels,
   timestamps,
   currentValue,
+  unit,
   accentColor,
   yMax,
+  secondarySeries,
 }: {
   data: number[];
   labels: string[];
   timestamps: string[];
   currentValue: string;
+  unit: string;
   accentColor: string;
   yMax?: number;
+  secondarySeries?: {
+    data: number[];
+    currentValue: string;
+    unit: string;
+    accentColor: string;
+    yMax?: number;
+  };
 }) {
   const latestPointOnly = data.map((value, index) =>
     index === data.length - 1 ? value : null,
+  );
+  const secondaryLatestPointOnly = secondarySeries?.data.map((value, index) =>
+    index === secondarySeries.data.length - 1 ? value : null,
   );
 
   return (
@@ -679,7 +709,12 @@ function CompactChart({
         {currentValue}
       </div>
       <LineChart
-        margin={{ top: 8, right: 8, bottom: 10, left: 10 }}
+        margin={{
+          top: 8,
+          right: secondarySeries ? 20 : 8,
+          bottom: 10,
+          left: 10,
+        }}
         height={220}
         grid={{ horizontal: true }}
         xAxis={[
@@ -692,28 +727,77 @@ function CompactChart({
             disableTicks: true,
           },
         ]}
-        yAxis={[{ min: 0, max: yMax, width: 30, disableTicks: true }]}
+        yAxis={[
+          {
+            id: "primary",
+            min: 0,
+            max: yMax,
+            width: 36,
+            disableTicks: true,
+          },
+          ...(secondarySeries
+            ? [
+                {
+                  id: "secondary",
+                  min: 0,
+                  max: secondarySeries.yMax,
+                  position: "right" as const,
+                  width: 36,
+                  disableTicks: true,
+                },
+              ]
+            : []),
+        ]}
         series={[
           {
+            id: "primary-series",
             data,
             color: accentColor,
             showMark: false,
             area: true,
-            valueFormatter: (value: any) =>
-              `${value} ${currentValue.split(" ")[1]}`,
+            yAxisId: "primary",
+            valueFormatter: (value) =>
+              value === null ? null : `${value} ${unit}`,
           },
           {
+            id: "primary-latest",
             data: latestPointOnly,
             color: accentColor,
             showMark: true,
             curve: "linear",
+            yAxisId: "primary",
             valueFormatter: () => null,
           },
+          ...(secondarySeries
+            ? [
+                {
+                  id: "secondary-series",
+                  data: secondarySeries.data,
+                  color: secondarySeries.accentColor,
+                  showMark: false,
+                  curve: "linear" as const,
+                  yAxisId: "secondary",
+                  valueFormatter: (value: number | null) =>
+                    value === null ? null : `${value} ${secondarySeries.unit}`,
+                },
+                {
+                  id: "secondary-latest",
+                  data: secondaryLatestPointOnly ?? [],
+                  color: secondarySeries.accentColor,
+                  showMark: true,
+                  curve: "linear" as const,
+                  yAxisId: "secondary",
+                  valueFormatter: () => null,
+                },
+              ]
+            : []),
         ]}
         sx={{
           ...chartSx,
+          "& .MuiLineElement-series-secondary-series": {
+            strokeDasharray: "6 4",
+          },
           "& .MuiMarkElement-root": {
-            fill: accentColor,
             stroke: "#ffffff",
             strokeWidth: 2,
             r: 4,
