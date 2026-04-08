@@ -50,8 +50,9 @@ const MapComponent = ({
   interactive?: boolean;
   className?: string;
 }) => {
-  const [selectedLocation, setSelectedLocation] =
-    useState<TrackLocation>("B-Lot");
+  const [selectedLocation, setSelectedLocation] = useState<TrackLocation>(
+    "Indianapolis Motor Speedway",
+  );
   const position = {
     lat: latitude ?? locations[selectedLocation].lat,
     lng: longitude ?? locations[selectedLocation].lng,
@@ -244,12 +245,14 @@ const MapComponent = ({
 };
 
 function TurnMarkerLabel({ turn, zoom }: { turn: number; zoom: number }) {
-  const isClose = zoom >= 17;
+  const isClose = zoom >= 14;
 
   return (
     <div
       className={`flex items-center justify-center rounded-full border border-white/80 bg-slate-950/88 font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,0.32)] backdrop-blur-sm ${
-        isClose ? "h-6 min-w-6 px-1.5 text-[11px]" : "h-5 min-w-5 px-1 text-[9px]"
+        isClose
+          ? "h-3.5 min-w-3.5 px-px text-[7px]"
+          : "h-3.5 min-w-3.5 px-px text-[7px]"
       }`}
       aria-label={`Turn ${turn}`}
       title={`Turn ${turn}`}
@@ -268,11 +271,11 @@ function FlagMarker({
   variant: "green" | "checkered";
   zoom: number;
 }) {
-  const isClose = zoom >= 17;
-  const poleHeightClass = isClose ? "h-7" : "h-6";
-  const poleTopClass = isClose ? "top-1.5" : "top-1";
-  const badgeClass = isClose ? "h-4 w-5" : "h-3.5 w-4";
-  const labelClass = isClose ? "mt-1 text-[8px]" : "mt-0.5 text-[7px]";
+  const isClose = zoom >= 14;
+  const poleHeightClass = isClose ? "h-6" : "h-6";
+  const poleTopClass = isClose ? "top-1" : "top-1";
+  const badgeClass = isClose ? "h-3.5 w-4" : "h-3.5 w-4";
+  const labelClass = isClose ? "mt-0.5 text-[6px]" : "mt-0.5 text-[6px]";
 
   return (
     <div
@@ -282,7 +285,7 @@ function FlagMarker({
     >
       <div className="relative">
         <div
-          className={`absolute left-0.5 ${poleTopClass} ${poleHeightClass} w-[2px] rounded-full bg-white/85 shadow-[0_0_10px_rgba(0,0,0,0.22)]`}
+          className={`absolute left-0.5 ${poleTopClass} ${poleHeightClass} w-0.5 rounded-full bg-white/85 shadow-[0_0_10px_rgba(0,0,0,0.22)]`}
         />
         <div
           className={`relative ml-1 rounded-[3px] border border-white/75 shadow-[0_4px_12px_rgba(0,0,0,0.28)] ${badgeClass} ${
