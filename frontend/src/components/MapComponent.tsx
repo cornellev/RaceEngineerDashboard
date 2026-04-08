@@ -272,10 +272,7 @@ function FlagMarker({
   zoom: number;
 }) {
   const isClose = zoom >= 14;
-  const poleHeightClass = isClose ? "h-6" : "h-6";
-  const poleTopClass = isClose ? "top-1" : "top-1";
-  const badgeClass = isClose ? "h-3.5 w-4" : "h-3.5 w-4";
-  const labelClass = isClose ? "mt-0.5 text-[6px]" : "mt-0.5 text-[6px]";
+  const badgeClass = isClose ? "h-2.5 w-2.5" : "h-2.5 w-2.5";
 
   return (
     <div
@@ -285,20 +282,12 @@ function FlagMarker({
     >
       <div className="relative">
         <div
-          className={`absolute left-0.5 ${poleTopClass} ${poleHeightClass} w-0.5 rounded-full bg-white/85 shadow-[0_0_10px_rgba(0,0,0,0.22)]`}
-        />
-        <div
           className={`relative ml-1 rounded-[3px] border border-white/75 shadow-[0_4px_12px_rgba(0,0,0,0.28)] ${badgeClass} ${
             variant === "green"
               ? "bg-emerald-500"
               : "bg-[conic-gradient(from_90deg,#ffffff_0_25%,#111827_25%_50%,#ffffff_50%_75%,#111827_75%_100%)]"
           }`}
         />
-      </div>
-      <div
-        className={`rounded-full border border-white/10 bg-slate-950/76 px-1.5 py-0.5 font-medium uppercase tracking-[0.12em] text-white/82 backdrop-blur-sm ${labelClass}`}
-      >
-        {label}
       </div>
     </div>
   );
