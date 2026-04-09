@@ -455,6 +455,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 {calculateLapTimes(
                   runSession.lapTimes,
                   runSession.startTimestamp ?? 0,
+                  latestTimestamp ??
+                    runSession.lapTimes[runSession.lapTimes.length - 1] ??
+                    0,
                 ).map((lapTime) => {
                   return (
                     <p
@@ -497,7 +500,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         </div>
       </DashboardCard>
 
-      <DashboardCard className="min-h-200 lg:min-h-100 lg:col-span-4 lg:row-start-1">
+      <DashboardCard className="min-h-200 lg:min-h-100 lg:col-span-4 lg:row-start-1 lg:row-span-2">
         <MapComponent
           latitude={latest?.gps.lat ?? null}
           longitude={latest?.gps.long ?? null}
@@ -507,7 +510,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
       <DashboardCard
         className="min-h-100 lg:min-h-55 lg:col-span-4 2xl:col-span-5 lg:row-start-2"
-        title="Speed v. Time"
+        title="Timeseries"
       >
         {history.length > 0 ? (
           <CompactChart
@@ -521,6 +524,17 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               SPEEDOMETER_MAX_MPH,
               Math.ceil((latestSpeed * 2.23694) / 10) * 10,
             )}
+            secondarySeries={{
+              data: powerHistory,
+              currentValue: `${formatValue(latestPowerKw, 2)} kW`,
+              unit: "kW",
+              accentColor: "#c41e3a99",
+              yMax: Math.max(
+                4.5,
+                Math.ceil(Math.max(...powerHistory, latestPowerKw ?? 0) / 10) *
+                  10,
+              ),
+            }}
           />
         ) : (
           <EmptyTelemetryState compact />
@@ -549,37 +563,6 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             value={`${formatValue(latest?.rpm_back.rpm_right ?? 0, 0)} RPM`}
           ></SignalTile>
         </div>
-      </DashboardCard>
-
-      <DashboardCard
-        className="min-h-100 lg:min-h-55 lg:col-span-4 lg:row-start-2"
-        title="Power v. Time"
-      >
-        {history.length > 0 ? (
-          <CompactChart
-            accentColor="#22c55e"
-            currentValue={`${formatValue(latestPowerKw, 2)} kW`}
-            unit="kW"
-            timestamps={xAxisTimestamps}
-            data={powerHistory}
-            labels={xAxisLabels}
-            yMax={4.5}
-            secondarySeries={{
-              data: currentHistory,
-              currentValue: `${formatValue(latest?.power.current ?? 0, 1)} A`,
-              unit: "A",
-              accentColor: "#22c55e55",
-              yMax: Math.max(
-                50,
-                Math.ceil(
-                  Math.max(...currentHistory, latest?.power.current ?? 0) / 10,
-                ) * 10,
-              ),
-            }}
-          />
-        ) : (
-          <EmptyTelemetryState compact />
-        )}
       </DashboardCard>
     </div>
   );
@@ -705,8 +688,15 @@ function CompactChart({
 
   return (
     <div className="relative flex h-full min-h-0 flex-1">
-      <div className="pointer-events-none absolute right-3 top-1 z-10 rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
-        {currentValue}
+      <div className="pointer-events-none absolute right-10 top-1 z-10 flex justify-between items-center gap-2">
+        <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
+          {currentValue}
+        </div>
+        {secondarySeries && (
+          <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
+            {secondarySeries.currentValue}
+          </div>
+        )}
       </div>
       <LineChart
         margin={{
@@ -783,7 +773,7 @@ function CompactChart({
                 {
                   id: "secondary-latest",
                   data: secondaryLatestPointOnly ?? [],
-                  color: secondarySeries.accentColor,
+                  color: accentColor,
                   showMark: true,
                   curve: "linear" as const,
                   yAxisId: "secondary",
@@ -888,6 +878,9 @@ function calculateEfficiency(sample: SocketData): number | null {
 function calculateLapTimes(
   lapTimestamps: number[],
   startTime?: number,
+  currentTime: number = lapTimestamps[lapTimestamps.length - 1] ??
+    startTime ??
+    0,
 ): { value: number; color: string }[] {
   if (lapTimestamps.length === 0) return [];
   let lapTimes = [
@@ -896,11 +889,18 @@ function calculateLapTimes(
   for (let i = 1; i < lapTimestamps.length; i++) {
     const value = lapTimestamps[i] - lapTimestamps[i - 1];
     const color =
-      value < 210 * TIMESTAMP_UNITS_PER_SECOND
+      value < 525 * TIMESTAMP_UNITS_PER_SECOND
         ? "text-green-700"
         : "text-red-700";
     lapTimes = [{ value: value, color: color }, ...lapTimes];
   }
+  lapTimes = [
+    {
+      value: currentTime - lapTimestamps[lapTimestamps.length - 1],
+      color: "text-white/55",
+    },
+    ...lapTimes,
+  ];
   return lapTimes;
 }
 
