@@ -1,44 +1,25 @@
 import { useEffect, useState, useRef } from "react";
 import { APIProvider, Map, AdvancedMarker } from "@vis.gl/react-google-maps";
 import mapImage from "../assets/map.jpg";
-import locations from "../utils/locations";
+import {
+  locations,
+  IMS_FLAG_MARKERS,
+  IMS_TURN_MARKERS,
+} from "../utils/locations";
 
 const locationOptions = ["B-Lot", "Indianapolis Motor Speedway"] as const;
 type TrackLocation = (typeof locationOptions)[number];
 
-const IMS_TURN_MARKERS = [
-  { id: 1, lat: 39.799075111676224, lng: -86.23865549660229 },
-  { id: 2, lat: 39.799295129847344, lng: -86.2377705786008 },
-  { id: 3, lat: 39.80037913540656, lng: -86.23760192842447 },
-  { id: 4, lat: 39.801163421941126, lng: -86.23585301585724 },
-  { id: 5, lat: 39.799488293418236, lng: -86.23539460045293 },
-  { id: 6, lat: 39.79902455557395, lng: -86.23514440526584 },
-  { id: 7, lat: 39.79236342353246, lng: -86.23463847050992 },
-  { id: 8, lat: 39.792192922155095, lng: -86.23324845441954 },
-  { id: 9, lat: 39.791596164009725, lng: -86.2326769568461 },
-  { id: 10, lat: 39.791533431721575, lng: -86.23125135300353 },
-  { id: 11, lat: 39.788861077810736, lng: -86.23156241589633 },
-  { id: 12, lat: 39.78827959633701, lng: -86.23528251099486 },
-  { id: 13, lat: 39.789553967953125, lng: -86.23556880408972 },
-  { id: 14, lat: 39.789262796749206, lng: -86.2375730529455 },
-] as const;
+function isValidCoordinate(value: number | null, min: number, max: number) {
+  return value !== null && Number.isFinite(value) && value >= min && value <= max;
+}
 
-const IMS_FLAG_MARKERS = [
-  {
-    id: "green-flag",
-    lat: 39.793509866527366,
-    lng: -86.2388742590957,
-    label: "Green",
-    variant: "green" as const,
-  },
-  {
-    id: "checkered-flag",
-    lat: 39.793164176215356,
-    lng: -86.23886986975018,
-    label: "Finish",
-    variant: "checkered" as const,
-  },
-] as const;
+function isValidLatLng(latitude: number | null, longitude: number | null) {
+  return (
+    isValidCoordinate(latitude, -90, 90) &&
+    isValidCoordinate(longitude, -180, 180)
+  );
+}
 
 const MapComponent = ({
   latitude,
@@ -53,11 +34,12 @@ const MapComponent = ({
   const [selectedLocation, setSelectedLocation] = useState<TrackLocation>(
     "Indianapolis Motor Speedway",
   );
-  const position = {
-    lat: latitude ?? locations[selectedLocation].lat,
-    lng: longitude ?? locations[selectedLocation].lng,
-  };
   const mapCenter = locations[selectedLocation];
+  const hasLivePosition = isValidLatLng(latitude, longitude);
+  const position = {
+    lat: hasLivePosition ? (latitude as number) : mapCenter.lat,
+    lng: hasLivePosition ? (longitude as number) : mapCenter.lng,
+  };
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapId = import.meta.env.VITE_GOOGLE_MAP_ID || "DEMO_MAP_ID";
 
@@ -104,7 +86,7 @@ const MapComponent = ({
   }, []);
 
   useEffect(() => {
-    if (latitude !== null && longitude !== null) {
+    if (hasLivePosition) {
       setIsPulsing(true);
 
       const timeout = setTimeout(() => {
@@ -113,7 +95,7 @@ const MapComponent = ({
 
       return () => clearTimeout(timeout);
     }
-  }, [latitude, longitude]);
+  }, [hasLivePosition, latitude, longitude]);
 
   if (!apiKey) {
     return (
