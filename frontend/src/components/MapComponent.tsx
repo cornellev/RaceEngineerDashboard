@@ -175,7 +175,7 @@ const MapComponent = ({
           fullscreenControl={false}
           defaultHeading={135}
           heading={heading}
-          tilt={35}
+          tilt={25}
           mapId={mapId}
           options={{
             clickableIcons: false,
@@ -251,8 +251,8 @@ function TurnMarkerLabel({ turn, zoom }: { turn: number; zoom: number }) {
     <div
       className={`flex items-center justify-center rounded-full border border-white/80 bg-slate-950/88 font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,0.32)] backdrop-blur-sm ${
         isClose
-          ? "h-3.5 min-w-3.5 px-px text-[7px]"
-          : "h-3.5 min-w-3.5 px-px text-[7px]"
+          ? "h-3 min-w-3 px-px text-[5px]"
+          : "h-3 min-w-3 px-px text-[5px]"
       }`}
       aria-label={`Turn ${turn}`}
       title={`Turn ${turn}`}
