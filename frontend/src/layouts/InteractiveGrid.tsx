@@ -531,8 +531,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               accentColor: "#c41e3a99",
               yMax: Math.max(
                 4.5,
-                Math.ceil(Math.max(...powerHistory, latestPowerKw ?? 0) / 10) *
-                  10,
+                Math.ceil(Math.max(...powerHistory, latestPowerKw ?? 0)),
               ),
             }}
           />
@@ -547,21 +546,61 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       >
         <div className="grid h-full grid-cols-2 gap-3 rows-auto-fr">
           <SignalTile
-            label="Current"
-            value={`${formatValue(latest?.power.current ?? 0, 1)} A`}
-          ></SignalTile>
+            label="Throttle"
+            value={`${formatThrottle(latest?.motor.throttle ?? 0)}%`}
+          >
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(
+                latest?.steering.brake_pressure
+                  ? latest.steering.brake_pressure / 6
+                  : 0,
+                100,
+              )}
+              sx={{
+                height: 10,
+                borderRadius: 2,
+              }}
+            />
+          </SignalTile>
           <SignalTile
-            label="Voltage"
-            value={`${formatValue(latest?.power.voltage ?? 0, 1)} V`}
-          ></SignalTile>
-          <SignalTile
-            label="RPM"
-            value={`${formatValue(latest?.rpm_back.rpm_left ?? 0, 0)} RPM`}
-          ></SignalTile>
-          <SignalTile
-            label="RPM"
-            value={`${formatValue(latest?.rpm_back.rpm_right ?? 0, 0)} RPM`}
-          ></SignalTile>
+            label="Brake"
+            value={`${Math.round(latest?.steering.brake_pressure ?? 0)} PSI`}
+          >
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(
+                latest?.steering.brake_pressure
+                  ? latest.steering.brake_pressure / 6
+                  : 0,
+                100,
+              )}
+              sx={{
+                height: 10,
+                borderRadius: 2,
+              }}
+            />
+          </SignalTile>
+          <SignalTile label="Power">
+            <SignalTile
+              label="Current"
+              value={`${formatValue(latest?.power.current ?? 0, 1)} A`}
+            ></SignalTile>
+            <SignalTile
+              label="Voltage"
+              value={`${formatValue(latest?.power.voltage ?? 0, 1)} V`}
+            ></SignalTile>
+          </SignalTile>
+          <SignalTile label="RPM">
+            <SignalTile
+              label="Left"
+              value={`${formatValue(latest?.rpm_back.rpm_left ?? 0, 0)}`}
+            ></SignalTile>
+            <SignalTile
+              label="Right"
+              value={`${formatValue(latest?.rpm_back.rpm_right ?? 0, 0)}`}
+            ></SignalTile>
+          </SignalTile>
         </div>
       </DashboardCard>
     </div>
