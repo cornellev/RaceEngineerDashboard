@@ -64,6 +64,36 @@ button:active {
   background-color: var(--primary-accent);
 }
 
+.play-button {
+  border-style: var(--tw-border-style, solid);
+  border-width: 1px;
+  border-radius: 100%;
+  padding: 0;
+  width: 2.5em;
+  height: 2.5em;
+  background-color: color-mix(
+    in oklab,
+    var(--color-black) /* #000 = #000000 */ 25%,
+    transparent
+  );
+  border-color: color-mix(
+    in oklab,
+    var(--color-white) /* #fff = #ffffff */ 10%,
+    transparent
+  );
+}
+.play-button:hover {
+  background-color: var(--primary-accent);
+  border-color: color-mix(
+    in oklab,
+    var(--color-white) /* #fff = #ffffff */ 10%,
+    transparent
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #242424;

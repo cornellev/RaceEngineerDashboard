@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import { LineChart } from "@mui/x-charts";
 import { roundTo, TIMESTAMP_UNITS_PER_SECOND } from "../utils/telemetry";
 
@@ -60,17 +62,23 @@ export default function CompactChart({
   const secondaryLatestPointOnly = secondarySeries?.data.map((value, index) =>
     index === secondarySeries.data.length - 1 ? value : null,
   );
-  const [selectedTimestamps, setSelectedTimestamps] = useState<number[]>([]);
+
+  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
+
   const sparseTickValues = getSparseTickValues(labels);
+  const pauseButtonLabel = isPaused ? "Resume" : "Pause";
+  const PauseButtonIcon = isPaused ? PlayArrowRoundedIcon : PauseRoundedIcon;
 
   const formatTimestampLabel = (value: string) => {
     const index = Number.parseInt(value, 10);
     return Number.isNaN(index) ? value : (timestamps[index] ?? "");
   };
-  const orderedSelectedIndexes = getOrderedSelectedIndexes(
-    selectedTimestamps,
-    rawTimestamps,
-  );
+
+  const orderedSelectedIndexes =
+    selectedIndexes.length === 2
+      ? [...selectedIndexes].sort((left, right) => left - right)
+      : selectedIndexes;
+
   const selectedPointSeries = data.map((value, index) =>
     orderedSelectedIndexes.includes(index) ? value : null,
   );
@@ -118,28 +126,10 @@ export default function CompactChart({
       : null;
 
   useEffect(() => {
-    setSelectedTimestamps((previous) => {
-      if (previous.length === 0) {
-        return previous;
-      }
-
-      if (rawTimestamps.length === 0) {
-        return [];
-      }
-
-      const minTimestamp = rawTimestamps[0];
-      const maxTimestamp = rawTimestamps[rawTimestamps.length - 1];
-      const availableTimestamps = new Set(rawTimestamps);
-      const next = previous.filter(
-        (timestamp) =>
-          timestamp >= minTimestamp &&
-          timestamp <= maxTimestamp &&
-          availableTimestamps.has(timestamp),
-      );
-
-      return next.length === previous.length ? previous : next;
-    });
-  }, [rawTimestamps]);
+    if (!isPaused) {
+      setSelectedIndexes([]);
+    }
+  }, [isPaused, unit]);
 
   const handleAxisClick = (
     _event: MouseEvent,
@@ -155,50 +145,36 @@ export default function CompactChart({
       return;
     }
 
-    const clickedTimestamp = rawTimestamps[clickedIndex];
-
-    if (!Number.isFinite(clickedTimestamp)) {
-      return;
-    }
-
-    setSelectedTimestamps((previous) => {
+    setSelectedIndexes((previous) => {
       if (previous.length === 2) {
         return [];
       }
 
-      if (previous.includes(clickedTimestamp)) {
+      if (previous[0] === clickedIndex) {
         return [];
       }
 
-      return [...previous, clickedTimestamp];
+      return [...previous, clickedIndex];
     });
   };
 
   return (
     <div className="relative flex h-full min-h-0 flex-1">
-      <div className="pointer-events-none absolute inset-x-3 top-1 z-10 flex flex-wrap items-start justify-between gap-2 *:pointer-events-auto">
+      <div className="pointer-events-none absolute inset-x-3 top-1 z-10 flex flex-wrap items-center justify-between gap-2 *:pointer-events-auto">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          {primarySlopeMeasurement && (
-            <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
-              {primarySlopeMeasurement.label}
-            </div>
-          )}
-          {secondarySlopeMeasurement && (
-            <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
-              {secondarySlopeMeasurement.label}
-            </div>
-          )}
+          <div
+            className={`rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs ${primarySlopeMeasurement ? "opacity-100" : "opacity-0 pointer-events-none"} font-medium text-white/88`}
+          >
+            {primarySlopeMeasurement?.label ?? "+0.00 mph/s"}
+          </div>
+          <div
+            className={`rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs ${secondarySlopeMeasurement ? "opacity-100" : "opacity-0 pointer-events-none"} font-medium text-white/88`}
+          >
+            {secondarySlopeMeasurement?.label ?? "+0.00 kW/s"}
+          </div>
         </div>
 
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88 transition hover:bg-white/10"
-            onClick={onTogglePause}
-          >
-            {isPaused ? "Resume" : "Pause"}
-          </button>
-
           <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
             {currentValue}
           </div>
@@ -208,6 +184,15 @@ export default function CompactChart({
               {secondarySeries.currentValue}
             </div>
           )}
+          <button
+            type="button"
+            aria-label={pauseButtonLabel}
+            title={pauseButtonLabel}
+            className="play-button rounded-fullp-0 text-xs font-medium text-white focus:outline-none hover:outline-none hover:border-0"
+            onClick={onTogglePause}
+          >
+            <PauseButtonIcon sx={{ fontSize: 18 }} />
+          </button>
         </div>
       </div>
 
@@ -289,7 +274,7 @@ export default function CompactChart({
                 },
               ]
             : []),
-          ...(orderedSelectedIndexes.length > 0
+          ...(selectedIndexes.length > 0
             ? [
                 {
                   id: "primary-selection-points",
@@ -337,7 +322,7 @@ export default function CompactChart({
                       },
                     ]
                   : []),
-                ...(orderedSelectedIndexes.length > 0
+                ...(selectedIndexes.length > 0
                   ? [
                       {
                         id: "secondary-selection-points",
@@ -412,19 +397,6 @@ export default function CompactChart({
       />
     </div>
   );
-}
-
-function getOrderedSelectedIndexes(
-  selectedTimestamps: number[],
-  rawTimestamps: number[],
-) {
-  const selectedIndexes = selectedTimestamps
-    .map((timestamp) => rawTimestamps.indexOf(timestamp))
-    .filter((index) => index >= 0);
-
-  return selectedIndexes.length === 2
-    ? selectedIndexes.sort((left, right) => left - right)
-    : selectedIndexes;
 }
 
 function getSparseTickValues(labels: string[], maxTicks = 5) {
