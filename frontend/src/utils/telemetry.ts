@@ -31,13 +31,15 @@ export function calculateLapTimes(
   if (lapTimestamps.length === 0) return [];
 
   let lapTimes = [
-    { value: lapTimestamps[0] - (startTime ?? 0), color: "text-white/55" },
+    { value: lapTimestamps[0] - (startTime ?? 0), color: "text-green-700" },
   ];
 
   for (let index = 1; index < lapTimestamps.length; index += 1) {
     const value = lapTimestamps[index] - lapTimestamps[index - 1];
     const color =
-      value < 525 * TIMESTAMP_UNITS_PER_SECOND ? "text-green-700" : "text-red-700";
+      value < 525 * TIMESTAMP_UNITS_PER_SECOND
+        ? "text-green-700"
+        : "text-red-700";
     lapTimes = [{ value, color }, ...lapTimes];
   }
 
