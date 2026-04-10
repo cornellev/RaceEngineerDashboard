@@ -1,0 +1,356 @@
+import { useEffect, useState } from "react";
+import { LineChart } from "@mui/x-charts";
+import {
+  roundTo,
+  TIMESTAMP_UNITS_PER_SECOND,
+} from "../utils/telemetry";
+
+const chartSx = {
+  ".MuiChartsAxis-root .MuiChartsAxis-line": {
+    stroke: "rgba(255,255,255,0.2)",
+  },
+  ".MuiChartsAxis-root text": {
+    fill: "rgba(255,255,255,0.78)",
+  },
+  ".MuiChartsAxis-tickLabel": {
+    fill: "rgba(255,255,255,0.72)",
+    fontSize: 11,
+  },
+  ".MuiChartsAxis-label": {
+    fill: "rgba(255,255,255,0.82)",
+  },
+  ".MuiChartsGrid-line": {
+    stroke: "rgba(255,255,255,0.08)",
+  },
+};
+
+type SecondarySeries = {
+  data: number[];
+  currentValue: string;
+  unit: string;
+  accentColor: string;
+  yMax?: number;
+};
+
+export default function CompactChart({
+  data,
+  rawTimestamps,
+  labels,
+  timestamps,
+  currentValue,
+  unit,
+  accentColor,
+  yMax,
+  secondarySeries,
+}: {
+  data: number[];
+  rawTimestamps: number[];
+  labels: string[];
+  timestamps: string[];
+  currentValue: string;
+  unit: string;
+  accentColor: string;
+  yMax?: number;
+  secondarySeries?: SecondarySeries;
+}) {
+  const latestPointOnly = data.map((value, index) =>
+    index === data.length - 1 ? value : null,
+  );
+  const secondaryLatestPointOnly = secondarySeries?.data.map((value, index) =>
+    index === secondarySeries.data.length - 1 ? value : null,
+  );
+  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
+  const sparseTickValues = getSparseTickValues(labels);
+  const formatTimestampLabel = (value: string) => {
+    const index = Number.parseInt(value, 10);
+    return Number.isNaN(index) ? value : (timestamps[index] ?? "");
+  };
+  const orderedSelectedIndexes =
+    selectedIndexes.length === 2
+      ? [...selectedIndexes].sort((left, right) => left - right)
+      : selectedIndexes;
+  const selectedPointSeries = data.map((value, index) =>
+    orderedSelectedIndexes.includes(index) ? value : null,
+  );
+  const selectedSlopeSeries =
+    orderedSelectedIndexes.length === 2
+      ? data.map((value, index) =>
+          orderedSelectedIndexes.includes(index) ? value : null,
+        )
+      : [];
+  const slopeMeasurement =
+    orderedSelectedIndexes.length === 2
+      ? calculateSlopeMeasurement(
+          orderedSelectedIndexes[0],
+          orderedSelectedIndexes[1],
+          data,
+          rawTimestamps,
+          unit,
+        )
+      : null;
+
+  useEffect(() => {
+    setSelectedIndexes([]);
+  }, [data.length, labels.length, rawTimestamps[rawTimestamps.length - 1], unit]);
+
+  const handleAxisClick = (
+    _event: MouseEvent,
+    axisData: { dataIndex: number } | null,
+  ) => {
+    if (!axisData || !Number.isInteger(axisData.dataIndex)) {
+      return;
+    }
+
+    const clickedIndex = axisData.dataIndex;
+
+    if (clickedIndex < 0 || clickedIndex >= data.length) {
+      return;
+    }
+
+    setSelectedIndexes((previous) => {
+      if (previous.length === 2) {
+        return [];
+      }
+
+      if (previous[0] === clickedIndex) {
+        return [];
+      }
+
+      return [...previous, clickedIndex];
+    });
+  };
+
+  return (
+    <div className="relative flex h-full min-h-0 flex-1">
+      <div className="pointer-events-none absolute right-10 top-1 z-10 flex justify-between items-center gap-2">
+        {slopeMeasurement && (
+          <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
+            {slopeMeasurement.label}
+          </div>
+        )}
+        <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
+          {currentValue}
+        </div>
+        {secondarySeries && (
+          <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
+            {secondarySeries.currentValue}
+          </div>
+        )}
+      </div>
+      <LineChart
+        margin={{
+          top: 8,
+          right: secondarySeries ? 20 : 8,
+          bottom: 10,
+          left: 10,
+        }}
+        height={220}
+        grid={{ horizontal: true }}
+        xAxis={[
+          {
+            scaleType: "point",
+            data: labels,
+            height: 28,
+            valueFormatter: (value) => formatTimestampLabel(value),
+            tickInterval: sparseTickValues,
+            disableLine: true,
+            disableTicks: true,
+          },
+        ]}
+        yAxis={[
+          {
+            id: "primary",
+            min: 0,
+            max: yMax,
+            width: 36,
+            disableTicks: true,
+            valueFormatter: (value: number) => (value === 0 ? "" : `${value}`),
+          },
+          ...(secondarySeries
+            ? [
+                {
+                  id: "secondary",
+                  min: 0,
+                  max: secondarySeries.yMax,
+                  position: "right" as const,
+                  width: 36,
+                  disableTicks: true,
+                  valueFormatter: (value: number) =>
+                    value === 0 ? "" : `${value}`,
+                },
+              ]
+            : []),
+        ]}
+        series={[
+          {
+            id: "primary-series",
+            data,
+            color: accentColor,
+            showMark: false,
+            area: true,
+            yAxisId: "primary",
+            valueFormatter: (value) =>
+              value === null ? null : `${value} ${unit}`,
+          },
+          {
+            id: "primary-latest",
+            data: latestPointOnly,
+            color: accentColor,
+            showMark: true,
+            curve: "linear",
+            yAxisId: "primary",
+            valueFormatter: () => null,
+          },
+          ...(orderedSelectedIndexes.length === 2
+            ? [
+                {
+                  id: "primary-slope-line",
+                  data: selectedSlopeSeries,
+                  color: accentColor,
+                  showMark: false,
+                  curve: "linear" as const,
+                  connectNulls: true,
+                  yAxisId: "primary",
+                  valueFormatter: () => null,
+                },
+              ]
+            : []),
+          ...(selectedIndexes.length > 0
+            ? [
+                {
+                  id: "primary-selection-points",
+                  data: selectedPointSeries,
+                  color: accentColor,
+                  showMark: true,
+                  curve: "linear" as const,
+                  yAxisId: "primary",
+                  valueFormatter: () => null,
+                },
+              ]
+            : []),
+          ...(secondarySeries
+            ? [
+                {
+                  id: "secondary-series",
+                  data: secondarySeries.data,
+                  color: secondarySeries.accentColor,
+                  showMark: false,
+                  curve: "linear" as const,
+                  yAxisId: "secondary",
+                  valueFormatter: (value: number | null) =>
+                    value === null ? null : `${value} ${secondarySeries.unit}`,
+                },
+                {
+                  id: "secondary-latest",
+                  data: secondaryLatestPointOnly ?? [],
+                  color: secondarySeries.accentColor,
+                  showMark: true,
+                  curve: "linear" as const,
+                  yAxisId: "secondary",
+                  valueFormatter: () => null,
+                },
+              ]
+            : []),
+        ]}
+        sx={{
+          ...chartSx,
+          "& .MuiLineElement-series-secondary-series": {
+            strokeDasharray: "6 4",
+          },
+          "& .MuiLineElement-series-primary-slope-line": {
+            strokeDasharray: "5 4",
+            strokeWidth: 2.5,
+            opacity: 0.95,
+          },
+          "& .MuiMarkElement-root": {
+            strokeWidth: 2,
+            r: 4,
+          },
+          "& .MuiMarkElement-series-primary-latest": {
+            fill: accentColor,
+            stroke: accentColor,
+          },
+          "& .MuiMarkElement-series-primary-selection-points": {
+            fill: "#ffffff",
+            stroke: accentColor,
+            strokeWidth: 2.5,
+            r: 5,
+          },
+          ...(secondarySeries
+            ? {
+                "& .MuiMarkElement-series-secondary-latest": {
+                  fill: secondarySeries.accentColor,
+                  stroke: secondarySeries.accentColor,
+                },
+              }
+            : {}),
+          "& .MuiAreaElement-root": {
+            fillOpacity: 0.2,
+          },
+        }}
+        slotProps={{
+          tooltip: {
+            sx: {
+              "& .MuiChartsTooltip-table": {
+                backgroundColor: "#1e1e1e",
+              },
+            },
+          },
+        }}
+        onAxisClick={handleAxisClick}
+        skipAnimation
+      />
+    </div>
+  );
+}
+
+function getSparseTickValues(labels: string[], maxTicks = 6) {
+  if (labels.length <= maxTicks) {
+    return labels;
+  }
+
+  const step = Math.ceil((labels.length - 1) / (maxTicks - 1));
+  const selectedIndexes = new Set<number>([0, labels.length - 1]);
+
+  for (let index = step; index < labels.length - 1; index += step) {
+    selectedIndexes.add(index);
+  }
+
+  return labels.filter((_, index) => selectedIndexes.has(index));
+}
+
+function calculateSlopeMeasurement(
+  startIndex: number,
+  endIndex: number,
+  data: number[],
+  rawTimestamps: number[],
+  unit: string,
+) {
+  const startValue = data[startIndex];
+  const endValue = data[endIndex];
+  const startTimestamp = rawTimestamps[startIndex];
+  const endTimestamp = rawTimestamps[endIndex];
+  const elapsedSeconds =
+    (endTimestamp - startTimestamp) / TIMESTAMP_UNITS_PER_SECOND;
+
+  if (
+    !Number.isFinite(startValue) ||
+    !Number.isFinite(endValue) ||
+    !Number.isFinite(startTimestamp) ||
+    !Number.isFinite(endTimestamp) ||
+    elapsedSeconds <= 0
+  ) {
+    return null;
+  }
+
+  const slope = (endValue - startValue) / elapsedSeconds;
+
+  if (!Number.isFinite(slope)) {
+    return null;
+  }
+
+  return {
+    value: slope,
+    label: `${slope >= 0 ? "+" : ""}${roundTo(slope, 2)} ${unit}/s`,
+  };
+}
