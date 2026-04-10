@@ -17,8 +17,8 @@ export const locations: Record<string, Location> = {
 };
 
 export const IMS_TURN_MARKERS = [
-  { id: 1, lat: 39.799075111676224, lng: -86.23865549660229 },
-  { id: 2, lat: 39.799295129847344, lng: -86.2377705786008 },
+  { id: 1, lat: 39.799790, lng: -86.238500 },
+  { id: 2, lat: 39.799889, lng: -86.237867 },
   { id: 3, lat: 39.80037913540656, lng: -86.23760192842447 },
   { id: 4, lat: 39.801163421941126, lng: -86.23585301585724 },
   { id: 5, lat: 39.799488293418236, lng: -86.23539460045293 },
@@ -35,13 +35,20 @@ export const IMS_TURN_MARKERS = [
 
 export const IMS_FLAG_MARKERS = [
   {
-    id: "green-flag",
+    id: "green-flag1",
     lat: 39.793509866527366,
     lng: -86.2388742590957,
-    label: "Green",
+    label: "Start",
     variant: "green" as const,
   },
   {
+    id: "green-flag2",
+    lat: 39.793599,
+    lng: -86.234911,
+    label: "Halfway",
+    variant: "green" as const,
+  },
+  { 
     id: "checkered-flag",
     lat: 39.793164176215356,
     lng: -86.23886986975018,

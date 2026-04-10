@@ -39,6 +39,8 @@ export default function CompactChart({
   accentColor,
   yMax,
   secondarySeries,
+  isPaused,
+  onTogglePause,
 }: {
   data: number[];
   rawTimestamps: number[];
@@ -49,6 +51,8 @@ export default function CompactChart({
   accentColor: string;
   yMax?: number;
   secondarySeries?: SecondarySeries;
+  isPaused: boolean;
+  onTogglePause: () => void;
 }) {
   const latestPointOnly = data.map((value, index) =>
     index === data.length - 1 ? value : null,
@@ -58,6 +62,7 @@ export default function CompactChart({
   );
   const [selectedTimestamps, setSelectedTimestamps] = useState<number[]>([]);
   const sparseTickValues = getSparseTickValues(labels);
+
   const formatTimestampLabel = (value: string) => {
     const index = Number.parseInt(value, 10);
     return Number.isNaN(index) ? value : (timestamps[index] ?? "");
@@ -69,23 +74,27 @@ export default function CompactChart({
   const selectedPointSeries = data.map((value, index) =>
     orderedSelectedIndexes.includes(index) ? value : null,
   );
+
   const selectedSlopeSeries =
     orderedSelectedIndexes.length === 2
       ? data.map((value, index) =>
           orderedSelectedIndexes.includes(index) ? value : null,
         )
       : [];
+
   const secondarySelectedSlopeSeries =
     orderedSelectedIndexes.length === 2 && secondarySeries
       ? secondarySeries.data.map((value, index) =>
           orderedSelectedIndexes.includes(index) ? value : null,
         )
       : [];
+
   const secondarySelectedPointSeries = secondarySeries
     ? secondarySeries.data.map((value, index) =>
         orderedSelectedIndexes.includes(index) ? value : null,
       )
     : [];
+
   const primarySlopeMeasurement =
     orderedSelectedIndexes.length === 2
       ? calculateSlopeMeasurement(
@@ -96,6 +105,7 @@ export default function CompactChart({
           unit,
         )
       : null;
+
   const secondarySlopeMeasurement =
     orderedSelectedIndexes.length === 2 && secondarySeries
       ? calculateSlopeMeasurement(
@@ -166,7 +176,7 @@ export default function CompactChart({
 
   return (
     <div className="relative flex h-full min-h-0 flex-1">
-      <div className="pointer-events-none absolute inset-x-3 top-1 z-10 flex flex-wrap items-start justify-between gap-2">
+      <div className="pointer-events-none absolute inset-x-3 top-1 z-10 flex flex-wrap items-start justify-between gap-2 [&>*]:pointer-events-auto">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           {primarySlopeMeasurement && (
             <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
@@ -179,10 +189,20 @@ export default function CompactChart({
             </div>
           )}
         </div>
+
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88 transition hover:bg-white/10"
+            onClick={onTogglePause}
+          >
+            {isPaused ? "Resume" : "Pause"}
+          </button>
+
           <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
             {currentValue}
           </div>
+
           {secondarySeries && (
             <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
               {secondarySeries.currentValue}
@@ -190,6 +210,7 @@ export default function CompactChart({
           )}
         </div>
       </div>
+
       <LineChart
         margin={{
           top: 40,
