@@ -56,16 +56,16 @@ export default function CompactChart({
   const secondaryLatestPointOnly = secondarySeries?.data.map((value, index) =>
     index === secondarySeries.data.length - 1 ? value : null,
   );
-  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
+  const [selectedTimestamps, setSelectedTimestamps] = useState<number[]>([]);
   const sparseTickValues = getSparseTickValues(labels);
   const formatTimestampLabel = (value: string) => {
     const index = Number.parseInt(value, 10);
     return Number.isNaN(index) ? value : (timestamps[index] ?? "");
   };
-  const orderedSelectedIndexes =
-    selectedIndexes.length === 2
-      ? [...selectedIndexes].sort((left, right) => left - right)
-      : selectedIndexes;
+  const orderedSelectedIndexes = getOrderedSelectedIndexes(
+    selectedTimestamps,
+    rawTimestamps,
+  );
   const selectedPointSeries = data.map((value, index) =>
     orderedSelectedIndexes.includes(index) ? value : null,
   );
@@ -108,13 +108,28 @@ export default function CompactChart({
       : null;
 
   useEffect(() => {
-    setSelectedIndexes([]);
-  }, [
-    data.length,
-    labels.length,
-    rawTimestamps[rawTimestamps.length - 1],
-    unit,
-  ]);
+    setSelectedTimestamps((previous) => {
+      if (previous.length === 0) {
+        return previous;
+      }
+
+      if (rawTimestamps.length === 0) {
+        return [];
+      }
+
+      const minTimestamp = rawTimestamps[0];
+      const maxTimestamp = rawTimestamps[rawTimestamps.length - 1];
+      const availableTimestamps = new Set(rawTimestamps);
+      const next = previous.filter(
+        (timestamp) =>
+          timestamp >= minTimestamp &&
+          timestamp <= maxTimestamp &&
+          availableTimestamps.has(timestamp),
+      );
+
+      return next.length === previous.length ? previous : next;
+    });
+  }, [rawTimestamps]);
 
   const handleAxisClick = (
     _event: MouseEvent,
@@ -130,16 +145,22 @@ export default function CompactChart({
       return;
     }
 
-    setSelectedIndexes((previous) => {
+    const clickedTimestamp = rawTimestamps[clickedIndex];
+
+    if (!Number.isFinite(clickedTimestamp)) {
+      return;
+    }
+
+    setSelectedTimestamps((previous) => {
       if (previous.length === 2) {
         return [];
       }
 
-      if (previous[0] === clickedIndex) {
+      if (previous.includes(clickedTimestamp)) {
         return [];
       }
 
-      return [...previous, clickedIndex];
+      return [...previous, clickedTimestamp];
     });
   };
 
@@ -247,7 +268,7 @@ export default function CompactChart({
                 },
               ]
             : []),
-          ...(selectedIndexes.length > 0
+          ...(orderedSelectedIndexes.length > 0
             ? [
                 {
                   id: "primary-selection-points",
@@ -295,7 +316,7 @@ export default function CompactChart({
                       },
                     ]
                   : []),
-                ...(selectedIndexes.length > 0
+                ...(orderedSelectedIndexes.length > 0
                   ? [
                       {
                         id: "secondary-selection-points",
@@ -370,6 +391,19 @@ export default function CompactChart({
       />
     </div>
   );
+}
+
+function getOrderedSelectedIndexes(
+  selectedTimestamps: number[],
+  rawTimestamps: number[],
+) {
+  const selectedIndexes = selectedTimestamps
+    .map((timestamp) => rawTimestamps.indexOf(timestamp))
+    .filter((index) => index >= 0);
+
+  return selectedIndexes.length === 2
+    ? selectedIndexes.sort((left, right) => left - right)
+    : selectedIndexes;
 }
 
 function getSparseTickValues(labels: string[], maxTicks = 5) {
