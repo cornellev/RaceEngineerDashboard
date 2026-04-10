@@ -183,8 +183,8 @@ export function formatEfficiency(value: number | null): string {
   return `${value.toFixed(2)} mi/kWh`;
 }
 
-export function formatThrottle(value: number): string {
-  const normalized = Math.min(Math.max(Math.abs(value), 0), 100);
+export function formatDuty(value: number): string {
+  const normalized = value * 100;
   return formatValue(normalized, 0);
 }
 
