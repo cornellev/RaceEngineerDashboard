@@ -176,7 +176,7 @@ export default function CompactChart({
 
   return (
     <div className="relative flex h-full min-h-0 flex-1">
-      <div className="pointer-events-none absolute inset-x-3 top-1 z-10 flex flex-wrap items-start justify-between gap-2 [&>*]:pointer-events-auto">
+      <div className="pointer-events-none absolute inset-x-3 top-1 z-10 flex flex-wrap items-start justify-between gap-2 *:pointer-events-auto">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           {primarySlopeMeasurement && (
             <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
