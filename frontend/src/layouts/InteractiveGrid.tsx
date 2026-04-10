@@ -518,6 +518,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             currentValue={`${formatValue((speedHistory.reduce((accumulator, currentValue) => accumulator + currentValue) / (speedHistory.length > 0 ? speedHistory.length : 1)) * 2.23694, 1)} mph`}
             unit="mph"
             data={speedHistory.map((speed) => roundTo(speed * 2.23694, 1))}
+            rawTimestamps={history.map((sample) => sample.global_ts)}
             timestamps={xAxisTimestamps}
             labels={xAxisLabels}
             yMax={Math.max(
@@ -697,6 +698,7 @@ function EmptyTelemetryState({ compact = false }: { compact?: boolean }) {
 
 function CompactChart({
   data,
+  rawTimestamps,
   labels,
   timestamps,
   currentValue,
@@ -706,6 +708,7 @@ function CompactChart({
   secondarySeries,
 }: {
   data: number[];
+  rawTimestamps: number[];
   labels: string[];
   timestamps: string[];
   currentValue: string;
@@ -726,15 +729,80 @@ function CompactChart({
   const secondaryLatestPointOnly = secondarySeries?.data.map((value, index) =>
     index === secondarySeries.data.length - 1 ? value : null,
   );
+  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
   const sparseTickValues = getSparseTickValues(labels);
   const formatTimestampLabel = (value: string) => {
     const index = Number.parseInt(value, 10);
     return Number.isNaN(index) ? value : (timestamps[index] ?? "");
   };
+  const orderedSelectedIndexes =
+    selectedIndexes.length === 2
+      ? [...selectedIndexes].sort((left, right) => left - right)
+      : selectedIndexes;
+  const selectedPointSeries = data.map((value, index) =>
+    orderedSelectedIndexes.includes(index) ? value : null,
+  );
+  const selectedSlopeSeries =
+    orderedSelectedIndexes.length === 2
+      ? data.map((value, index) =>
+          orderedSelectedIndexes.includes(index) ? value : null,
+        )
+      : [];
+  const slopeMeasurement =
+    orderedSelectedIndexes.length === 2
+      ? calculateSlopeMeasurement(
+          orderedSelectedIndexes[0],
+          orderedSelectedIndexes[1],
+          data,
+          rawTimestamps,
+          unit,
+        )
+      : null;
+
+  useEffect(() => {
+    setSelectedIndexes([]);
+  }, [
+    data.length,
+    labels.length,
+    rawTimestamps[rawTimestamps.length - 1],
+    unit,
+  ]);
+
+  const handleAxisClick = (
+    _event: MouseEvent,
+    axisData: { dataIndex: number } | null,
+  ) => {
+    if (!axisData || !Number.isInteger(axisData.dataIndex)) {
+      return;
+    }
+
+    const clickedIndex = axisData.dataIndex;
+
+    if (clickedIndex < 0 || clickedIndex >= data.length) {
+      return;
+    }
+
+    setSelectedIndexes((previous) => {
+      if (previous.length === 2) {
+        return [];
+      }
+
+      if (previous[0] === clickedIndex) {
+        return [];
+      }
+
+      return [...previous, clickedIndex];
+    });
+  };
 
   return (
     <div className="relative flex h-full min-h-0 flex-1">
       <div className="pointer-events-none absolute right-10 top-1 z-10 flex justify-between items-center gap-2">
+        {slopeMeasurement && (
+          <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
+            {`${slopeMeasurement.label}`}
+          </div>
+        )}
         <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
           {currentValue}
         </div>
@@ -808,6 +876,33 @@ function CompactChart({
             yAxisId: "primary",
             valueFormatter: () => null,
           },
+          ...(orderedSelectedIndexes.length === 2
+            ? [
+                {
+                  id: "primary-slope-line",
+                  data: selectedSlopeSeries,
+                  color: accentColor,
+                  showMark: false,
+                  curve: "linear" as const,
+                  connectNulls: true,
+                  yAxisId: "primary",
+                  valueFormatter: () => null,
+                },
+              ]
+            : []),
+          ...(selectedIndexes.length > 0
+            ? [
+                {
+                  id: "primary-selection-points",
+                  data: selectedPointSeries,
+                  color: accentColor,
+                  showMark: true,
+                  curve: "linear" as const,
+                  yAxisId: "primary",
+                  valueFormatter: () => null,
+                },
+              ]
+            : []),
           ...(secondarySeries
             ? [
                 {
@@ -837,6 +932,11 @@ function CompactChart({
           "& .MuiLineElement-series-secondary-series": {
             strokeDasharray: "6 4",
           },
+          "& .MuiLineElement-series-primary-slope-line": {
+            strokeDasharray: "5 4",
+            strokeWidth: 2.5,
+            opacity: 0.95,
+          },
           "& .MuiMarkElement-root": {
             strokeWidth: 2,
             r: 4,
@@ -844,6 +944,12 @@ function CompactChart({
           "& .MuiMarkElement-series-primary-latest": {
             fill: accentColor,
             stroke: accentColor,
+          },
+          "& .MuiMarkElement-series-primary-selection-points": {
+            fill: "#ffffff",
+            stroke: accentColor,
+            strokeWidth: 2.5,
+            r: 5,
           },
           ...(secondarySeries
             ? {
@@ -866,6 +972,7 @@ function CompactChart({
             },
           },
         }}
+        onAxisClick={handleAxisClick}
         skipAnimation
       />
     </div>
@@ -885,6 +992,42 @@ function getSparseTickValues(labels: string[], maxTicks = 6) {
   }
 
   return labels.filter((_, index) => selectedIndexes.has(index));
+}
+
+function calculateSlopeMeasurement(
+  startIndex: number,
+  endIndex: number,
+  data: number[],
+  rawTimestamps: number[],
+  unit: string,
+) {
+  const startValue = data[startIndex];
+  const endValue = data[endIndex];
+  const startTimestamp = rawTimestamps[startIndex];
+  const endTimestamp = rawTimestamps[endIndex];
+  const elapsedSeconds =
+    (endTimestamp - startTimestamp) / TIMESTAMP_UNITS_PER_SECOND;
+
+  if (
+    !Number.isFinite(startValue) ||
+    !Number.isFinite(endValue) ||
+    !Number.isFinite(startTimestamp) ||
+    !Number.isFinite(endTimestamp) ||
+    elapsedSeconds <= 0
+  ) {
+    return null;
+  }
+
+  const slope = (endValue - startValue) / elapsedSeconds;
+
+  if (!Number.isFinite(slope)) {
+    return null;
+  }
+
+  return {
+    value: slope,
+    label: `${slope >= 0 ? "+" : ""}${roundTo(slope, 2)} ${unit}/s`,
+  };
 }
 
 function GaugePointer() {
