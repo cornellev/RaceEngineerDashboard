@@ -20,7 +20,7 @@ import {
   formatElapsed,
   formatEnergyWattHours,
   formatRunTimer,
-  formatThrottle,
+  formatDuty,
   formatValue,
   isValidGpsCoordinate,
   metersToMiles,
@@ -537,13 +537,13 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       >
         <div className="grid h-full grid-cols-2 gap-3 rows-auto-fr">
           <SignalTile
-            label="Throttle"
-            value={`${formatThrottle(latest?.motor.throttle ?? 0)}%`}
+            label="Duty Cycle"
+            value={`${formatDuty(latest?.motor.duty_cycle ?? 0)}%`}
           >
             <LinearProgress
               variant="determinate"
               value={Math.min(
-                latest?.motor.throttle ? Math.abs(latest.motor.throttle) : 0,
+                latest?.motor.duty_cycle ? Math.abs(latest.motor.duty_cycle) : 0,
                 100,
               )}
               sx={{
