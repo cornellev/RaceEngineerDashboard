@@ -510,7 +510,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
       <DashboardCard
         className="min-h-100 lg:min-h-55 lg:col-span-4 2xl:col-span-5 lg:row-start-2"
-        title="Timeseries"
+        title="Power and Speed"
       >
         {history.length > 0 ? (
           <CompactChart
@@ -552,9 +552,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             <LinearProgress
               variant="determinate"
               value={Math.min(
-                latest?.steering.brake_pressure
-                  ? latest.steering.brake_pressure / 6
-                  : 0,
+                latest?.motor.throttle ? Math.abs(latest.motor.throttle) : 0,
                 100,
               )}
               sx={{
@@ -582,24 +580,28 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             />
           </SignalTile>
           <SignalTile label="Power">
-            <SignalTile
-              label="Current"
-              value={`${formatValue(latest?.power.current ?? 0, 1)} A`}
-            ></SignalTile>
-            <SignalTile
-              label="Voltage"
-              value={`${formatValue(latest?.power.voltage ?? 0, 1)} V`}
-            ></SignalTile>
+            <div className="grid grid-rows-2 gap-3 h-full rows-auto-fr">
+              <SignalTile
+                label="Current"
+                value={`${formatValue(latest?.power.current ?? 0, 1)} A`}
+              ></SignalTile>
+              <SignalTile
+                label="Voltage"
+                value={`${formatValue(latest?.power.voltage ?? 0, 1)} V`}
+              ></SignalTile>
+            </div>
           </SignalTile>
           <SignalTile label="RPM">
-            <SignalTile
-              label="Left"
-              value={`${formatValue(latest?.rpm_back.rpm_left ?? 0, 0)}`}
-            ></SignalTile>
-            <SignalTile
-              label="Right"
-              value={`${formatValue(latest?.rpm_back.rpm_right ?? 0, 0)}`}
-            ></SignalTile>
+            <div className="grid grid-rows-2 gap-3 h-full rows-auto-fr">
+              <SignalTile
+                label="Left"
+                value={`${formatValue(latest?.rpm_back.rpm_left ?? 0, 0)}`}
+              ></SignalTile>
+              <SignalTile
+                label="Right"
+                value={`${formatValue(latest?.rpm_back.rpm_right ?? 0, 0)}`}
+              ></SignalTile>
+            </div>
           </SignalTile>
         </div>
       </DashboardCard>
@@ -647,7 +649,7 @@ function SignalTile({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-0 flex-col justify-between rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5 text-left">
+    <div className="flex min-h-0 flex-col justify-between rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5 text-left gap-1">
       <div className="text-[11px] uppercase tracking-[0.18em] text-white/42">
         {label}
       </div>
@@ -724,6 +726,11 @@ function CompactChart({
   const secondaryLatestPointOnly = secondarySeries?.data.map((value, index) =>
     index === secondarySeries.data.length - 1 ? value : null,
   );
+  const sparseTickValues = getSparseTickValues(labels);
+  const formatTimestampLabel = (value: string) => {
+    const index = Number.parseInt(value, 10);
+    return Number.isNaN(index) ? value : (timestamps[index] ?? "");
+  };
 
   return (
     <div className="relative flex h-full min-h-0 flex-1">
@@ -750,8 +757,9 @@ function CompactChart({
           {
             scaleType: "point",
             data: labels,
-            height: 16,
-            valueFormatter: (index) => timestamps[index],
+            height: 28,
+            valueFormatter: (value) => formatTimestampLabel(value),
+            tickInterval: sparseTickValues,
             disableLine: true,
             disableTicks: true,
           },
@@ -763,6 +771,7 @@ function CompactChart({
             max: yMax,
             width: 36,
             disableTicks: true,
+            valueFormatter: (value: number) => (value === 0 ? "" : `${value}`),
           },
           ...(secondarySeries
             ? [
@@ -773,6 +782,8 @@ function CompactChart({
                   position: "right" as const,
                   width: 36,
                   disableTicks: true,
+                  valueFormatter: (value: number) =>
+                    value === 0 ? "" : `${value}`,
                 },
               ]
             : []),
@@ -812,7 +823,7 @@ function CompactChart({
                 {
                   id: "secondary-latest",
                   data: secondaryLatestPointOnly ?? [],
-                  color: accentColor,
+                  color: secondarySeries.accentColor,
                   showMark: true,
                   curve: "linear" as const,
                   yAxisId: "secondary",
@@ -827,10 +838,21 @@ function CompactChart({
             strokeDasharray: "6 4",
           },
           "& .MuiMarkElement-root": {
-            stroke: "#ffffff",
             strokeWidth: 2,
             r: 4,
           },
+          "& .MuiMarkElement-series-primary-latest": {
+            fill: accentColor,
+            stroke: accentColor,
+          },
+          ...(secondarySeries
+            ? {
+                "& .MuiMarkElement-series-secondary-latest": {
+                  fill: secondarySeries.accentColor,
+                  stroke: secondarySeries.accentColor,
+                },
+              }
+            : {}),
           "& .MuiAreaElement-root": {
             fillOpacity: 0.2,
           },
@@ -848,6 +870,21 @@ function CompactChart({
       />
     </div>
   );
+}
+
+function getSparseTickValues(labels: string[], maxTicks = 6) {
+  if (labels.length <= maxTicks) {
+    return labels;
+  }
+
+  const step = Math.ceil((labels.length - 1) / (maxTicks - 1));
+  const selectedIndexes = new Set<number>([0, labels.length - 1]);
+
+  for (let index = step; index < labels.length - 1; index += step) {
+    selectedIndexes.add(index);
+  }
+
+  return labels.filter((_, index) => selectedIndexes.has(index));
 }
 
 function GaugePointer() {
@@ -1054,7 +1091,7 @@ function formatEfficiency(value: number | null): string {
 }
 
 function formatThrottle(value: number): string {
-  const normalized = Math.abs(value) <= 1 ? value * 100 : value;
+  const normalized = Math.min(Math.max(Math.abs(value), 0), 100);
   return formatValue(normalized, 0);
 }
 
