@@ -180,7 +180,7 @@ class SocketService {
   private url: string = `ws://127.0.0.1:8000/ws/stream`; // Replace with env variable URL
   private handlers: Set<MessageHandler> = new Set();
   private reconnectInterval: number = 5000;
-  private data: SocketData[] = [];
+  private data: SocketData[] = dummyData;
   private dataTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
   private readonly DATA_TIMEOUT_MS = 5000;
 

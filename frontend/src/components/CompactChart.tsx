@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { LineChart } from "@mui/x-charts";
-import {
-  roundTo,
-  TIMESTAMP_UNITS_PER_SECOND,
-} from "../utils/telemetry";
+import { roundTo, TIMESTAMP_UNITS_PER_SECOND } from "../utils/telemetry";
 
 const chartSx = {
   ".MuiChartsAxis-root .MuiChartsAxis-line": {
@@ -78,7 +75,18 @@ export default function CompactChart({
           orderedSelectedIndexes.includes(index) ? value : null,
         )
       : [];
-  const slopeMeasurement =
+  const secondarySelectedSlopeSeries =
+    orderedSelectedIndexes.length === 2 && secondarySeries
+      ? secondarySeries.data.map((value, index) =>
+          orderedSelectedIndexes.includes(index) ? value : null,
+        )
+      : [];
+  const secondarySelectedPointSeries = secondarySeries
+    ? secondarySeries.data.map((value, index) =>
+        orderedSelectedIndexes.includes(index) ? value : null,
+      )
+    : [];
+  const primarySlopeMeasurement =
     orderedSelectedIndexes.length === 2
       ? calculateSlopeMeasurement(
           orderedSelectedIndexes[0],
@@ -88,10 +96,25 @@ export default function CompactChart({
           unit,
         )
       : null;
+  const secondarySlopeMeasurement =
+    orderedSelectedIndexes.length === 2 && secondarySeries
+      ? calculateSlopeMeasurement(
+          orderedSelectedIndexes[0],
+          orderedSelectedIndexes[1],
+          secondarySeries.data,
+          rawTimestamps,
+          secondarySeries.unit,
+        )
+      : null;
 
   useEffect(() => {
     setSelectedIndexes([]);
-  }, [data.length, labels.length, rawTimestamps[rawTimestamps.length - 1], unit]);
+  }, [
+    data.length,
+    labels.length,
+    rawTimestamps[rawTimestamps.length - 1],
+    unit,
+  ]);
 
   const handleAxisClick = (
     _event: MouseEvent,
@@ -122,24 +145,33 @@ export default function CompactChart({
 
   return (
     <div className="relative flex h-full min-h-0 flex-1">
-      <div className="pointer-events-none absolute right-10 top-1 z-10 flex justify-between items-center gap-2">
-        {slopeMeasurement && (
-          <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
-            {slopeMeasurement.label}
-          </div>
-        )}
-        <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
-          {currentValue}
+      <div className="pointer-events-none absolute inset-x-3 top-1 z-10 flex flex-wrap items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          {primarySlopeMeasurement && (
+            <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
+              {primarySlopeMeasurement.label}
+            </div>
+          )}
+          {secondarySlopeMeasurement && (
+            <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
+              {secondarySlopeMeasurement.label}
+            </div>
+          )}
         </div>
-        {secondarySeries && (
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
           <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
-            {secondarySeries.currentValue}
+            {currentValue}
           </div>
-        )}
+          {secondarySeries && (
+            <div className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-xs font-medium text-white/88">
+              {secondarySeries.currentValue}
+            </div>
+          )}
+        </div>
       </div>
       <LineChart
         margin={{
-          top: 8,
+          top: 40,
           right: secondarySeries ? 20 : 8,
           bottom: 10,
           left: 10,
@@ -206,7 +238,7 @@ export default function CompactChart({
                 {
                   id: "primary-slope-line",
                   data: selectedSlopeSeries,
-                  color: accentColor,
+                  color: accentColor + "99",
                   showMark: false,
                   curve: "linear" as const,
                   connectNulls: true,
@@ -220,7 +252,7 @@ export default function CompactChart({
                 {
                   id: "primary-selection-points",
                   data: selectedPointSeries,
-                  color: accentColor,
+                  color: accentColor + "99",
                   showMark: true,
                   curve: "linear" as const,
                   yAxisId: "primary",
@@ -249,6 +281,33 @@ export default function CompactChart({
                   yAxisId: "secondary",
                   valueFormatter: () => null,
                 },
+                ...(orderedSelectedIndexes.length === 2
+                  ? [
+                      {
+                        id: "secondary-slope-line",
+                        data: secondarySelectedSlopeSeries,
+                        color: secondarySeries.accentColor,
+                        showMark: false,
+                        curve: "linear" as const,
+                        connectNulls: true,
+                        yAxisId: "secondary",
+                        valueFormatter: () => null,
+                      },
+                    ]
+                  : []),
+                ...(selectedIndexes.length > 0
+                  ? [
+                      {
+                        id: "secondary-selection-points",
+                        data: secondarySelectedPointSeries,
+                        color: secondarySeries.accentColor,
+                        showMark: true,
+                        curve: "linear" as const,
+                        yAxisId: "secondary",
+                        valueFormatter: () => null,
+                      },
+                    ]
+                  : []),
               ]
             : []),
         ]}
@@ -258,7 +317,10 @@ export default function CompactChart({
             strokeDasharray: "6 4",
           },
           "& .MuiLineElement-series-primary-slope-line": {
-            strokeDasharray: "5 4",
+            strokeWidth: 2.5,
+            opacity: 0.95,
+          },
+          "& .MuiLineElement-series-secondary-slope-line": {
             strokeWidth: 2.5,
             opacity: 0.95,
           },
@@ -267,20 +329,26 @@ export default function CompactChart({
             r: 4,
           },
           "& .MuiMarkElement-series-primary-latest": {
-            fill: accentColor,
+            fill: "#ffffff",
             stroke: accentColor,
           },
           "& .MuiMarkElement-series-primary-selection-points": {
-            fill: "#ffffff",
+            fill: accentColor,
             stroke: accentColor,
-            strokeWidth: 2.5,
+            strokeWidth: 0,
             r: 5,
           },
           ...(secondarySeries
             ? {
                 "& .MuiMarkElement-series-secondary-latest": {
+                  fill: "#ffffff",
+                  stroke: secondarySeries.accentColor,
+                },
+                "& .MuiMarkElement-series-secondary-selection-points": {
                   fill: secondarySeries.accentColor,
                   stroke: secondarySeries.accentColor,
+                  strokeWidth: 0,
+                  r: 5,
                 },
               }
             : {}),
@@ -304,7 +372,7 @@ export default function CompactChart({
   );
 }
 
-function getSparseTickValues(labels: string[], maxTicks = 6) {
+function getSparseTickValues(labels: string[], maxTicks = 5) {
   if (labels.length <= maxTicks) {
     return labels;
   }
