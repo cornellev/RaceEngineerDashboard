@@ -417,7 +417,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 instantEfficiency
                   ? instantEfficiency >= 100
                     ? `${formatEfficiency(instantEfficiency)}`
-                    : "mi/kWh"
+                    : "speed / power"
                   : "no data to display"
               }
             />
