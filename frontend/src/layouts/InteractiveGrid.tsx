@@ -543,7 +543,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
       <DashboardCard
         className="min-h-100 lg:col-span-4 lg:row-start-2 lg:min-h-55 2xl:col-span-5"
-        title="Power and Speed"
+        title="Power & Speed"
       >
         {history.length > 0 ? (
           <CompactChart
@@ -555,9 +555,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             timestamps={xAxisTimestamps}
             labels={xAxisLabels}
             isPaused={isChartPaused}
-            onTogglePause={
-              isChartPaused ? handleResumeChart : handlePauseChart
-            }
+            onTogglePause={isChartPaused ? handleResumeChart : handlePauseChart}
             yMax={Math.max(
               SPEEDOMETER_MAX_MPH,
               Math.ceil(latestSpeed / 10) * 10,
@@ -590,7 +588,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             <LinearProgress
               variant="determinate"
               value={Math.min(
-                latest?.motor.duty_cycle ? Math.abs(latest.motor.duty_cycle) : 0,
+                latest?.motor.duty_cycle
+                  ? Math.abs(latest.motor.duty_cycle)
+                  : 0,
                 100,
               )}
               sx={{
