@@ -53,12 +53,20 @@ type RunSessionState = RunAverageState &
   };
 
 export default function InteractiveGrid({ data }: { data: SocketData[] }) {
-  const history = useMemo(() => data.slice(-HISTORY_LIMIT), [data]);
+  const [isChartPaused, setIsChartPaused] = useState(false);
+  const [pausedHistory, setPausedHistory] = useState<SocketData[]>([]);
+
+  const history = useMemo(() => {
+    if (isChartPaused) return pausedHistory;
+    return data.slice(-HISTORY_LIMIT);
+  }, [data, isChartPaused, pausedHistory]);
+
   const latest = history[history.length - 1] ?? null;
   const latestTimestamp = latest?.global_ts ?? null;
   const latestSpeed = (latest?.filtered.speed ?? 0) * 2.23694;
   const latestPowerKw = latest ? calculatePowerKilowatts(latest) : 0;
   const instantEfficiency = latest ? calculateEfficiency(latest) : null;
+
   const [warn, setWarn] = useState<{
     value: boolean;
     message: string;
@@ -68,7 +76,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
     message: "",
     timerId: null,
   });
+
   const [disabled, setDisabled] = useState<number | null>(null);
+
   const [runSession, setRunSession] = useState<RunSessionState>({
     startTimestamp: null,
     isRunning: false,
@@ -83,37 +93,48 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
     lastSpeed: null,
     lapTimes: [],
   });
+
   const runTimerTimestamp = runSession.isRunning
     ? latestTimestamp
     : runSession.lastProcessedTimestamp;
+
   const runTimerLabel =
     runSession.startTimestamp !== null && runTimerTimestamp !== null
       ? formatRunTimer(runSession.startTimestamp, runTimerTimestamp)
       : "0:00.0";
+
   const runDistanceMiles = metersToMiles(runSession.distanceMeters);
   const runEfficiencyRatio =
     runSession.energyKilowattHours > 0
       ? runDistanceMiles / runSession.energyKilowattHours
       : null;
 
+  const handlePauseChart = () => {
+    setPausedHistory(data.slice(-HISTORY_LIMIT));
+    setIsChartPaused(true);
+  };
+
+  const handleResumeChart = () => {
+    setIsChartPaused(false);
+  };
+
   const speedHistory = history.map((sample) =>
     roundTo(sample.filtered.speed, 1),
   );
+
   const powerHistory = history.map((sample) =>
     roundTo(calculatePowerKilowatts(sample), 2),
   );
-  const currentHistory = history.map((sample) =>
-    roundTo(sample.power.current, 1),
-  );
-  const xAxisLabels = history.map((_, index) => {
-    return index.toString();
-  });
-  const xAxisTimestamps = history.map((sample) => {
-    return formatElapsed(
+
+  const xAxisLabels = history.map((_, index) => index.toString());
+
+  const xAxisTimestamps = history.map((sample) =>
+    formatElapsed(
       sample.global_ts,
       history[history.length - 1]?.global_ts ?? sample.global_ts,
-    );
-  });
+    ),
+  );
+
   useEffect(() => {
     if (!runSession.isRunning || runSession.lastProcessedTimestamp === null) {
       return;
@@ -217,6 +238,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
   const toggleRunTracking = async () => {
     if (disabled) clearTimeout(disabled);
+
     setDisabled(
       setTimeout(() => {
         setDisabled(null);
@@ -226,7 +248,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
     if (disabled) {
       const warnMessage = "Stop spamming the fucking button";
       console.warn(warnMessage);
+
       if (warn.timerId) clearTimeout(warn.timerId);
+
       setWarn({
         value: true,
         message: warnMessage,
@@ -241,7 +265,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
     if (latestTimestamp === null && !runSession.isRunning) {
       console.warn("Cannot start run tracking without any telemetry data");
+
       if (warn.timerId) clearTimeout(warn.timerId);
+
       setWarn({
         value: true,
         message: "No data to record",
@@ -274,6 +300,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         const startingAverage = instantEfficiency;
         const startingLatitude = latest?.gps.lat ?? null;
         const startingLongitude = latest?.gps.long ?? null;
+
         const hasValidStartingGps =
           startingLatitude !== null &&
           startingLongitude !== null &&
@@ -308,7 +335,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
   const handleLap = () => {
     setRunSession((previous) => {
-      let lapTimes = [
+      const lapTimes = [
         ...previous.lapTimes,
         runSession.lastProcessedTimestamp ?? 0,
       ];
@@ -321,13 +348,13 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
   };
 
   return (
-    <div className="grid min-h-full w-full text-white grid-cols-1 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(100,1fr)_minmax(100,1fr)] m-0 px-3 pt-2 pb-3.5 sm:px-4 lg:px-5">
+    <div className="grid min-h-full w-full grid-cols-1 gap-3 px-3 pt-2 pb-3.5 text-white sm:px-4 lg:grid-cols-12 lg:grid-rows-[minmax(100,1fr)_minmax(100,1fr)] lg:px-5">
       <DashboardCard
-        className="min-h-42.5 lg:min-h-100 lg:col-span-3 lg:row-start-1 auto-rows-fr"
+        className="min-h-42.5 auto-rows-fr lg:col-span-3 lg:row-start-1 lg:min-h-100"
         title="Speed"
       >
         <div className="flex h-full max-h-full flex-col justify-end gap-0 xl:gap-3">
-          <div className="flex flex-wrap xl:flex-nowrap items-center justify-center">
+          <div className="flex flex-wrap items-center justify-center xl:flex-nowrap">
             <GaugeContainer
               width={180}
               height={180}
@@ -342,8 +369,9 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               <GaugeReferenceArc />
               <GaugePointer />
             </GaugeContainer>
-            <div className="flex flex-1 flex-col xl:items-end text-right items-center mb-3">
-              <strong className="text-5xl lg:text-4xl font-semibold leading-none text-white 2xl:text-6xl tabular-nums">
+
+            <div className="mb-3 flex flex-1 flex-col items-center text-right xl:items-end">
+              <strong className="text-5xl leading-none font-semibold tabular-nums text-white lg:text-4xl 2xl:text-6xl">
                 {formatValue(latestSpeed, 1)}
               </strong>
               <span className="mt-1 text-sm uppercase tracking-[0.2em] text-white/55">
@@ -351,6 +379,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               </span>
             </div>
           </div>
+
           <div className="h-1/3">
             <MetricPanel
               label="Max"
@@ -359,14 +388,18 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                   ? `${formatValue(runSession.lastSpeed * 2.23694, 1)} mph`
                   : "--"
               }
-              helper={`${runSession.isRunning ? "Recorder Active" : "start recording to track"}`}
+              helper={
+                runSession.isRunning
+                  ? "Recorder Active"
+                  : "start recording to track"
+              }
             />
           </div>
         </div>
       </DashboardCard>
 
       <DashboardCard
-        className="min-h-42.5 lg:min-h-100 lg:col-span-5 lg:row-start-1"
+        className="min-h-42.5 lg:col-span-5 lg:row-start-1 lg:min-h-100"
         title={`Run Summary${latest?.latency_ms ? ` | Latency [${Math.round(Math.abs(latest.latency_ms))}ms]` : ""}`}
       >
         <div className="flex h-full flex-col justify-between gap-4 lg:gap-2">
@@ -388,6 +421,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                   : "no data to display"
               }
             />
+
             <MetricPanel
               label="Average Efficiency"
               value={
@@ -405,6 +439,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                     : "start recording to track"
               }
             />
+
             <MetricPanel
               label="Distance"
               value={
@@ -420,6 +455,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                   : "start recording to track"
               }
             />
+
             <MetricPanel
               label="Energy Used"
               value={
@@ -436,12 +472,14 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               }
             />
           </div>
+
           {runSession.lapTimes.length >= 1 ? (
-            <div className="flex justify-start w-full px-3">
+            <div className="flex w-full justify-start px-3">
               <h2 className="text-sm font-semibold uppercase tracking-[0.26em] text-white/78">
                 Laps
               </h2>
-              <div className="flex justify-start flex-row-reverse overflow-x-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+
+              <div className="flex flex-row-reverse justify-start overflow-x-scroll [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 {calculateLapTimes(
                   runSession.lapTimes,
                   runSession.startTimestamp ?? 0,
@@ -451,7 +489,8 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
                 ).map((lapTime) => {
                   return (
                     <p
-                      className={`text-sm font-semibold uppercase tracking-[0.26em] ${lapTime.color} ml-3`}
+                      key={`${lapTime.value}-${lapTime.color}`}
+                      className={`ml-3 text-sm font-semibold uppercase tracking-[0.26em] ${lapTime.color}`}
                     >
                       {formatRunTimer(0, lapTime.value).slice(0, -2)}{" "}
                     </p>
@@ -460,27 +499,31 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               </div>
             </div>
           ) : null}
-          <div className="flex items-center justify-between gap-0 sm:gap-2 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5">
-            <strong className="text-3xl font-semibold leading-none text-white sm:5xl 2xl:text-6xl tabular-nums">
+
+          <div className="flex items-center justify-between gap-0 rounded-[0.95rem] border border-white/8 bg-white/4 px-3 py-2.5 sm:gap-2">
+            <strong className="text-3xl leading-none font-semibold tabular-nums text-white sm:5xl 2xl:text-6xl">
               {runTimerLabel}
             </strong>
+
             <p
-              className={`wrap text-sm text-white/55 text-center overflow-x-scroll hidden sm:block lg:hidden xl:block transition-opacity duration-1000 ease-in-out [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${warn.value ? "opacity-100" : "opacity-0"}`}
+              className={`wrap hidden overflow-x-scroll text-center text-sm text-white/55 opacity-0 transition-opacity duration-1000 ease-in-out [scrollbar-width:none] [-ms-overflow-style:none] sm:block lg:hidden xl:block [&::-webkit-scrollbar]:hidden ${warn.value ? "opacity-100" : "opacity-0"}`}
             >
               {warn.message}
             </p>
-            <div className="flex justify-between items-center gap-3">
+
+            <div className="flex items-center justify-between gap-3">
               {runSession.isRunning ? (
                 <button
-                  className={`rounded-full focus:outline-0 border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition`}
+                  className="rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition focus:outline-0"
                   onClick={handleLap}
                 >
                   Lap
                 </button>
               ) : null}
+
               <button
                 type="button"
-                className={`rounded-full focus:outline-0 border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition`}
+                className="rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition focus:outline-0"
                 onClick={toggleRunTracking}
               >
                 {runSession.isRunning ? "Stop" : "Start"}
@@ -490,7 +533,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
         </div>
       </DashboardCard>
 
-      <DashboardCard className="min-h-200 lg:min-h-100 lg:col-span-4 lg:row-start-1 lg:row-span-2">
+      <DashboardCard className="min-h-200 lg:col-span-4 lg:row-start-1 lg:row-span-2 lg:min-h-100">
         <MapComponent
           latitude={latest?.gps.lat ?? null}
           longitude={latest?.gps.long ?? null}
@@ -499,7 +542,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       </DashboardCard>
 
       <DashboardCard
-        className="min-h-100 lg:min-h-55 lg:col-span-4 2xl:col-span-5 lg:row-start-2"
+        className="min-h-100 lg:col-span-4 lg:row-start-2 lg:min-h-55 2xl:col-span-5"
         title="Power and Speed"
       >
         {history.length > 0 ? (
@@ -511,9 +554,13 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
             rawTimestamps={history.map((sample) => sample.global_ts)}
             timestamps={xAxisTimestamps}
             labels={xAxisLabels}
+            isPaused={isChartPaused}
+            onTogglePause={
+              isChartPaused ? handleResumeChart : handlePauseChart
+            }
             yMax={Math.max(
               SPEEDOMETER_MAX_MPH,
-              Math.ceil((latestSpeed * 2.23694) / 10) * 10,
+              Math.ceil(latestSpeed / 10) * 10,
             )}
             secondarySeries={{
               data: powerHistory,
@@ -532,7 +579,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       </DashboardCard>
 
       <DashboardCard
-        className="min-h-100 lg:min-h-55 lg:col-span-4 2xl:col-span-3 lg:row-start-2"
+        className="min-h-100 lg:col-span-4 lg:row-start-2 lg:min-h-55 2xl:col-span-3"
         title="Signals"
       >
         <div className="grid h-full grid-cols-2 gap-3 rows-auto-fr">
@@ -552,6 +599,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               }}
             />
           </SignalTile>
+
           <SignalTile
             label="Brake"
             value={`${Math.round(latest?.steering.brake_pressure ?? 0)} PSI`}
@@ -570,28 +618,30 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
               }}
             />
           </SignalTile>
+
           <SignalTile label="Power">
-            <div className="grid grid-rows-2 gap-3 h-full rows-auto-fr">
+            <div className="grid h-full grid-rows-2 gap-3 rows-auto-fr">
               <SignalTile
                 label="Current"
                 value={`${formatValue(latest?.power.current ?? 0, 1)} A`}
-              ></SignalTile>
+              />
               <SignalTile
                 label="Voltage"
                 value={`${formatValue(latest?.power.voltage ?? 0, 1)} V`}
-              ></SignalTile>
+              />
             </div>
           </SignalTile>
+
           <SignalTile label="RPM">
-            <div className="grid grid-rows-2 gap-3 h-full rows-auto-fr">
+            <div className="grid h-full grid-rows-2 gap-3 rows-auto-fr">
               <SignalTile
                 label="Left"
                 value={`${formatValue(latest?.rpm_back.rpm_left ?? 0, 0)}`}
-              ></SignalTile>
+              />
               <SignalTile
                 label="Right"
                 value={`${formatValue(latest?.rpm_back.rpm_right ?? 0, 0)}`}
-              ></SignalTile>
+              />
             </div>
           </SignalTile>
         </div>
