@@ -31,7 +31,7 @@ export interface SocketData {
   motor: {
     ts: number;
     rpm: number;
-    throttle: number;
+    duty_cycle: number;
   };
   filtered: {
     speed: number;
@@ -160,7 +160,7 @@ const normalizeData = (
     motor: {
       ts: toTimestampMs(motor.ts) ?? globalTimestamp,
       rpm: toNumber(motor.rpm),
-      throttle: toNumber(motor.throttle),
+      duty_cycle: toNumber(motor.duty_cycle),
     },
     filtered: {
       speed: toNumber(filtered.speed ?? speedValue),
