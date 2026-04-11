@@ -1,5 +1,6 @@
 frontend/node_modules/
 frontend/.env
+frontend/data/
 .env
 .env*.local
 .direnv
