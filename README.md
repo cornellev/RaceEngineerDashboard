@@ -1,11 +1,12 @@
 # Race Engineer Dashboard
 
 ## Team Members
+
 Donte & Adi
 
 ---
 
-![Live Dashboard Image](frontend/public/dashboard.png)
+![Live Dashboard Image](frontend/public/LiveRED.png)
 
 ---
 
@@ -27,7 +28,6 @@ Live telemetry and analysis for the car: sensor streams (with filtering), derive
 - Scrub through samples with a timeline slider or play/pause the run at multiple playback speeds
 - Reuse the same dashboard widgets in **Replay** mode to inspect historical data sample-by-sample
 
-
 **Derived metrics**
 
 - **Distance** calculated from aggregating GPS data
@@ -45,7 +45,7 @@ Live telemetry and analysis for the car: sensor streams (with filtering), derive
 1. **Running the Project**
 
    Create a `.env` file in the the root directory (not under `/backend` or `/frontend`).
-   See `.env.example` for more info. 
+   See `.env.example` for more info.
 
    Make sure Docker containers and volumes for this project are not running already.
    Then, run `docker compose up --build` to get all containers running.
@@ -57,7 +57,7 @@ Live telemetry and analysis for the car: sensor streams (with filtering), derive
    RaceGPT. Connect your machine to the RaceGPT host, and the dashboard should
    connect when built.
 
-3. **Frontend Testing**
+2. **Frontend Testing**
 
    Refer to `frontend/README.md` for more information.  
    **[Bun Installation](https://bun.com/docs/installation)**: The frontend uses **Bun** instead of **NodeJS** as a package manager
@@ -82,9 +82,11 @@ Live telemetry and analysis for the car: sensor streams (with filtering), derive
 
    Instructions for getting your own `API_KEY` and `MAP_ID` are in `frontend/README.md`.
 
-4. **Backend Troubleshooting**
+3. **Backend Troubleshooting**
 
    Refer to `backend/README.md`.
+
+<video src="frontend/public/LiveRED.mp4" loop muted autoplay></video>
 
 ---
 
@@ -150,6 +152,8 @@ to default coordinates and shows a warning after upload.
 The Replay page file picker currently accepts ROS bag-related extensions such as
 `.bag`, `.db3`, and `.mcap`, but **only CSV replay is implemented today**. Uploading
 one of those files will not start a bag replay yet.
+
+<video src="frontend/public/ReplayRED.mp4" loop muted autoplay></video>
 
 ---
 
