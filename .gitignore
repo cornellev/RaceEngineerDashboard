@@ -7,3 +7,4 @@ frontend/data/
 .envrc
 .DS_Store
 backend/__pycache__
+.codex
