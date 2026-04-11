@@ -7,6 +7,7 @@ const DEFAULT_LATITUDE = 42.44666485723302;
 const DEFAULT_LONGITUDE = -76.4608710371343;
 const PLAYBACK_SPEEDS = [0.5, 1, 2, 4];
 const BASE_PLAYBACK_INTERVAL_MS = 180;
+const MPH_PER_MPS = 2.23694;
 
 type ParsedCsvResult = {
   rows: SocketData[];
@@ -39,17 +40,20 @@ export default function Replay() {
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
-      setFrameIndex((previous) => {
-        const nextFrame = Math.min(previous + 1, replayData.length - 1);
+    const timeoutId = window.setTimeout(
+      () => {
+        setFrameIndex((previous) => {
+          const nextFrame = Math.min(previous + 1, replayData.length - 1);
 
-        if (nextFrame >= replayData.length - 1) {
-          setIsPlaying(false);
-        }
+          if (nextFrame >= replayData.length - 1) {
+            setIsPlaying(false);
+          }
 
-        return nextFrame;
-      });
-    }, Math.max(40, BASE_PLAYBACK_INTERVAL_MS / playbackSpeed));
+          return nextFrame;
+        });
+      },
+      Math.max(40, BASE_PLAYBACK_INTERVAL_MS / playbackSpeed),
+    );
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -204,7 +208,7 @@ export default function Replay() {
                 onChange={(event) => {
                   setPlaybackSpeed(Number(event.target.value));
                 }}
-                className="rounded-full border border-white/10 bg-[#1f1f1f] px-3 py-2 text-sm text-white outline-none"
+                className="rounded-full border border-white/10 bg-[#1f1f1f] pl-3 pr-4 py-2 text-sm text-white outline-none"
               >
                 {PLAYBACK_SPEEDS.map((speed) => (
                   <option key={speed} value={speed}>
@@ -221,10 +225,7 @@ export default function Replay() {
             </div>
           </div>
         </section>
-
-        <div className="flex-1">
-          <InteractiveGrid data={visibleData} mode="replay" />
-        </div>
+        <InteractiveGrid data={visibleData} mode="replay" />
       </div>
     </section>
   );
@@ -246,7 +247,9 @@ function parseReplayCsv(source: string): ParsedCsvResult {
   const warnings: string[] = [];
 
   if (normalizedRows.some((row) => row.gps.lat === DEFAULT_LATITUDE)) {
-    warnings.push("Some GPS fields were missing, so default coordinates were used.");
+    warnings.push(
+      "Some GPS fields were missing, so default coordinates were used.",
+    );
   }
 
   return {
@@ -329,13 +332,18 @@ function mapCsvRowToSocketData(row: CsvRow, index: number): SocketData {
   );
 
   const globalTs = getTimestamp(normalizedRow, index);
-
-  const gpsSpeed = getNumber(normalizedRow, [
+  const gpsSpeed = getSpeedMetersPerSecond(normalizedRow, [
+    "gpsspeedmps",
     "gpsspeed",
     "speedmps",
     "speed",
     "velocity",
   ]);
+  const filteredSpeed = getSpeedMetersPerSecond(
+    normalizedRow,
+    ["filteredspeedmps", "filteredspeed", "speedfilteredmps", "speedfiltered"],
+    gpsSpeed,
+  );
 
   return {
     seq: getNumber(normalizedRow, ["seq", "index", "row"], index + 1),
@@ -399,8 +407,16 @@ function mapCsvRowToSocketData(row: CsvRow, index: number): SocketData {
     },
     gps: {
       ts: getTimestamp(normalizedRow, index, ["gpsts", "locationts"], globalTs),
-      lat: getNumber(normalizedRow, ["gpslat", "lat", "latitude"], DEFAULT_LATITUDE),
-      long: getNumber(normalizedRow, ["gpslong", "long", "lng", "lon", "longitude"], DEFAULT_LONGITUDE),
+      lat: getNumber(
+        normalizedRow,
+        ["gpslat", "lat", "latitude"],
+        DEFAULT_LATITUDE,
+      ),
+      long: getNumber(
+        normalizedRow,
+        ["gpslong", "long", "lng", "lon", "longitude"],
+        DEFAULT_LONGITUDE,
+      ),
       heading: getNumber(normalizedRow, ["gpsheading", "heading"]),
       speed: gpsSpeed,
     },
@@ -409,12 +425,13 @@ function mapCsvRowToSocketData(row: CsvRow, index: number): SocketData {
       rpm: getNumber(normalizedRow, ["motorrpm", "rpm"]),
       duty_cycle: getNumber(normalizedRow, [
         "motordutycycle",
+        "motorthrottle",
         "dutycycle",
         "duty",
       ]),
     },
     filtered: {
-      speed: getNumber(normalizedRow, ["filteredspeed", "speedfiltered"], gpsSpeed),
+      speed: filteredSpeed,
     },
     latency_ms: getNullableNumber(normalizedRow, ["latencyms", "latency"]),
   };
@@ -467,6 +484,34 @@ function getNullableNumber(
   return null;
 }
 
+function getSpeedMetersPerSecond(
+  row: Record<string, string>,
+  aliases: string[],
+  fallback = 0,
+): number {
+  for (const alias of aliases) {
+    const value = row[alias];
+
+    if (value == null || value.length === 0) {
+      continue;
+    }
+
+    const parsed = Number(value);
+
+    if (!Number.isFinite(parsed)) {
+      continue;
+    }
+
+    if (alias.includes("mph")) {
+      return parsed / MPH_PER_MPS;
+    }
+
+    return parsed;
+  }
+
+  return fallback;
+}
+
 function getTimestamp(
   row: Record<string, string>,
   index: number,
@@ -496,30 +541,8 @@ function getTimestamp(
       continue;
     }
 
-    return normalizeTimestampMicros(parsed);
+    return parsed;
   }
 
   return fallback ?? (index + 1) * 100000;
-}
-
-function normalizeTimestampMicros(value: number): number {
-  const absoluteValue = Math.abs(value);
-
-  if (absoluteValue >= 1e17) {
-    return Math.round(value / 1000);
-  }
-
-  if (absoluteValue >= 1e14) {
-    return Math.round(value);
-  }
-
-  if (absoluteValue >= 1e11) {
-    return Math.round(value * 1000);
-  }
-
-  if (absoluteValue >= 1e9) {
-    return Math.round(value * 1000000);
-  }
-
-  return Math.round(value * 1000000);
 }

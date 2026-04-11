@@ -29,6 +29,7 @@ a {
 }
 a:hover {
   color: var(--primary-accent);
+  cursor: pointer;
 }
 
 body {

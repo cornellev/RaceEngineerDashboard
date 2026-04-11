@@ -28,7 +28,7 @@ export default function Header(props: {
 
         {/* Navigation Links */}
         <nav className="flex items-center gap-8">
-          <button
+          <a
             type="button"
             className="transition-colors duration-200 font-medium hidden sm:block border-0 bg-transparent p-0"
             onClick={() => {
@@ -36,17 +36,8 @@ export default function Header(props: {
             }}
           >
             RaceGPT
-          </button>
-          <button
-            type="button"
-            className={navLinkClass(props.activePage === "data")}
-            onClick={() => {
-              props.onNavigate("data");
-            }}
-          >
-            Data
-          </button>
-          <button
+          </a>
+          <a
             type="button"
             className={navLinkClass(props.activePage === "replay")}
             onClick={() => {
@@ -54,7 +45,16 @@ export default function Header(props: {
             }}
           >
             Replay
-          </button>
+          </a>
+          <a
+            type="button"
+            className={navLinkClass(props.activePage === "data")}
+            onClick={() => {
+              props.onNavigate("data");
+            }}
+          >
+            Data
+          </a>
           {/* Hamburger Menu */}
           <label className="swap swap-rotate group">
             {/* this hidden checkbox controls the state */}
