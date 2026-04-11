@@ -5,7 +5,7 @@ import type { SocketData } from "../utils/Socket";
 
 const DEFAULT_LATITUDE = 42.44666485723302;
 const DEFAULT_LONGITUDE = -76.4608710371343;
-const PLAYBACK_SPEEDS = [0.5, 1, 2, 4];
+const PLAYBACK_SPEEDS = [0.5, 1, 2, 4, 10, 20];
 const BASE_PLAYBACK_INTERVAL_MS = 180;
 const MPH_PER_MPS = 2.23694;
 
@@ -208,7 +208,7 @@ export default function Replay() {
                 onChange={(event) => {
                   setPlaybackSpeed(Number(event.target.value));
                 }}
-                className="rounded-full border border-white/10 bg-[#1f1f1f] pl-3 pr-4 py-2 text-sm text-white outline-none"
+                className="rounded-full border border-white/10 bg-[#1f1f1f] px-3 py-2 text-sm text-white outline-none"
               >
                 {PLAYBACK_SPEEDS.map((speed) => (
                   <option key={speed} value={speed}>
