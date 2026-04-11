@@ -104,10 +104,10 @@ export default function InteractiveGrid({
     ? latestTimestamp
     : runSession.lastProcessedTimestamp;
   const lapTimerTimestamp = runSession.isRunning
-    ? runSession.lastProcessedTimestamp ?? latestTimestamp
-    : runSession.lastProcessedTimestamp ??
+    ? (runSession.lastProcessedTimestamp ?? latestTimestamp)
+    : (runSession.lastProcessedTimestamp ??
       runSession.lapTimes[runSession.lapTimes.length - 1] ??
-      latestTimestamp;
+      latestTimestamp);
 
   const runTimerLabel =
     runSession.startTimestamp !== null && runTimerTimestamp !== null
@@ -359,10 +359,7 @@ export default function InteractiveGrid({
         return previous;
       }
 
-      const lapTimes = [
-        ...previous.lapTimes,
-        previous.lastProcessedTimestamp,
-      ];
+      const lapTimes = [...previous.lapTimes, previous.lastProcessedTimestamp];
 
       return {
         ...previous,
@@ -615,7 +612,7 @@ export default function InteractiveGrid({
               variant="determinate"
               value={Math.min(
                 latest?.motor.duty_cycle
-                  ? Math.abs(latest.motor.duty_cycle)
+                  ? Math.abs(latest.motor.duty_cycle * 100)
                   : 0,
                 100,
               )}
