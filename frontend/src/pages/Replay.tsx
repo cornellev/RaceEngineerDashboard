@@ -43,7 +43,17 @@ export default function Replay() {
     const timeoutId = window.setTimeout(
       () => {
         setFrameIndex((previous) => {
-          const nextFrame = Math.min(previous + 1, replayData.length - 1);
+          const nextFrame = Math.min(
+            previous +
+              (playbackSpeed < 10
+                ? 1
+                : playbackSpeed <= 20
+                  ? 2
+                  : playbackSpeed <= 50
+                    ? 5
+                    : 10),
+            replayData.length - 1,
+          );
 
           if (nextFrame >= replayData.length - 1) {
             setIsPlaying(false);
