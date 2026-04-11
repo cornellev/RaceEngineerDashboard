@@ -11,7 +11,7 @@ Donte & Adi
 
 ## Summary
 
-Live telemetry and analysis for the car: sensor streams (with filtering), derived run metrics, and optional **RaceGPT** insights in a sidebar.
+Live telemetry and analysis for the car: sensor streams (with filtering), derived run metrics, optional **RaceGPT** insights in a sidebar, and a browser-based replay mode for uploaded telemetry exports.
 
 **Sensor views**
 
@@ -20,6 +20,12 @@ Live telemetry and analysis for the car: sensor streams (with filtering), derive
 - **GPS** location display with Google Maps
 - Live **Steering** angle, **Brake** pressure, **Throttle**, and **RPM** on all wheels
 - Timestamps and stopwatch for lap and race timing
+
+**Replay tools**
+
+- Upload a telemetry **CSV** export and replay it directly in the dashboard UI
+- Scrub through samples with a timeline slider or play/pause the run at multiple playback speeds
+- Reuse the same dashboard widgets in **Replay** mode to inspect historical data sample-by-sample
 
 
 **Derived metrics**
@@ -106,12 +112,55 @@ As mentioned above, there are two modes for requesting responses on the sidebar.
 
 ---
 
+## Replay Mode
+
+The frontend includes a dedicated **Replay** page alongside the live **Data** view.
+Use it to inspect telemetry exports without needing a live ROS2 stream.
+
+### Current capabilities
+
+- Upload a `.csv` telemetry file from the Replay page
+- Play, pause, reset, and scrub through the uploaded run
+- Change playback speed from `0.5x` up to `100x`
+- Render replayed samples through the same dashboard layout used for live telemetry
+
+### CSV expectations
+
+CSV replay is parsed entirely in the frontend and is intentionally flexible about
+column names. Headers are normalized by lowercasing and removing punctuation, so
+both flat and dotted names are accepted.
+
+Examples of supported fields include:
+
+- `speed`, `speed_mps`, `gps.speed`, `velocity`
+- `filtered.speed`
+- `gps.lat`, `gps.long`, `latitude`, `longitude`
+- `power.current`, `power.voltage`
+- `steering.turn_angle`, `steering.brake_pressure`
+- `motor.rpm`, `motor.duty_cycle`
+- `rpm_front.left`, `rpm_front.right`, `rpm_back.left`, `rpm_back.right`
+- `global_ts`, `timestamp`, `time`, or a row index fallback when timestamps are missing
+
+If a speed column name includes `mph`, the replay parser converts it to meters per
+second before rendering. If GPS coordinates are missing, the dashboard falls back
+to default coordinates and shows a warning after upload.
+
+### ROSBag status
+
+The Replay page file picker currently accepts ROS bag-related extensions such as
+`.bag`, `.db3`, and `.mcap`, but **only CSV replay is implemented today**. Uploading
+one of those files will not start a bag replay yet.
+
+---
+
 ## System Overview
 
 ```
 ROS2 Sensors → Backend (Python + ROS2) → WebSocket Stream → Frontend (React + TypeScript + Bun)
                                           ↓
                                   RaceGPT Integration
+
+Uploaded CSV → Frontend Replay Parser → Replay Timeline → Shared Dashboard Widgets
 ```
 
 ---
@@ -133,3 +182,4 @@ RaceGPT is integrated as an **on-demand analysis layer**.
 - The frontend can trigger ROSbag recording via `/bag` endpoints
 - The backend communicates with the DAQ machine through **Tailscale**
 - ROSbag files are stored remotely for later analysis and replay
+- Local dashboard replay currently supports uploaded CSV telemetry exports
