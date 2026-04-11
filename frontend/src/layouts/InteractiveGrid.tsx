@@ -52,7 +52,13 @@ type RunSessionState = RunAverageState &
     isRunning: boolean;
   };
 
-export default function InteractiveGrid({ data }: { data: SocketData[] }) {
+export default function InteractiveGrid({
+  data,
+  mode = "live",
+}: {
+  data: SocketData[];
+  mode?: "live" | "replay";
+}) {
   const [isChartPaused, setIsChartPaused] = useState(false);
   const [pausedHistory, setPausedHistory] = useState<SocketData[]>([]);
 
@@ -280,15 +286,7 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
       return;
     }
 
-    try {
-      const response = await fetch(
-        `http://localhost:8000/bag/${runSession.isRunning ? "stop" : "start"}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-
+    const updateRunSession = () => {
       setRunSession((previous) => {
         if (previous.isRunning) {
           return {
@@ -321,6 +319,23 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
           lapTimes: [],
         };
       });
+    };
+
+    if (mode === "replay") {
+      updateRunSession();
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/bag/${runSession.isRunning ? "stop" : "start"}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+
+      updateRunSession();
 
       if (!response.ok) {
         throw new Error("Network response was not ok for ROS bag endpoint");
@@ -400,7 +415,11 @@ export default function InteractiveGrid({ data }: { data: SocketData[] }) {
 
       <DashboardCard
         className="min-h-42.5 lg:col-span-5 lg:row-start-1 lg:min-h-100"
-        title={`Run Summary${latest?.latency_ms ? ` | Latency [${Math.round(Math.abs(latest.latency_ms))}ms]` : ""}`}
+        title={`Run Summary${
+          mode === "live" && latest?.latency_ms
+            ? ` | Latency [${Math.round(Math.abs(latest.latency_ms))}ms]`
+            : ""
+        }`}
       >
         <div className="flex h-full flex-col justify-between gap-4 lg:gap-2">
           <div className="grid grid-cols-2 gap-3">

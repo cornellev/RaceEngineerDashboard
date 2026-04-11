@@ -1,5 +1,6 @@
 import Header from "./components/Header";
 import Data from "./pages/Data";
+import Replay from "./pages/Replay";
 import SideBar from "./components/SideBar";
 
 import socket from "./utils/Socket";
@@ -9,6 +10,8 @@ import { useState, useEffect } from "react";
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+
+type AppPage = "data" | "replay";
 
 const darkTheme = createTheme({
   palette: {
@@ -35,6 +38,7 @@ const darkTheme = createTheme({
 
 function App() {
   const [sideBar, setSideBar] = useState(false);
+  const [activePage, setActivePage] = useState<AppPage>("data");
   const [data, setData] = useState<SocketData[]>(() => socket.getData());
 
   useEffect(() => {
@@ -50,13 +54,18 @@ function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      <Header setSideBar={setSideBar} sideBar={sideBar} />
+      <Header
+        setSideBar={setSideBar}
+        sideBar={sideBar}
+        activePage={activePage}
+        onNavigate={setActivePage}
+      />
       <div className="w-screen min-h-16.75 h-[7.5vh] max-h-19 mx-auto px-4 sm:px-6 lg:px-8" />
       <SideBar open={sideBar} />
       <main
         className={`${sideBar ? "xl:w-[80%]" : "w-screen"} h-fit transition-all duration-300 ease-in-out m-0 p-0`}
       >
-        <Data data={data} />
+        {activePage === "data" ? <Data data={data} /> : <Replay />}
       </main>
     </ThemeProvider>
   );

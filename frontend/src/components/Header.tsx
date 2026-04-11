@@ -3,7 +3,14 @@ import logo from "/logo.svg";
 export default function Header(props: {
   setSideBar: (open: boolean) => void;
   sideBar: boolean;
+  activePage: "data" | "replay";
+  onNavigate: (page: "data" | "replay") => void;
 }) {
+  const navLinkClass = (isActive: boolean) =>
+    `border-0 bg-transparent p-0 font-medium transition-colors duration-200 ${
+      isActive ? "text-[var(--primary-accent)]" : "text-white"
+    }`;
+
   return (
     <header className="fixed top-0 left-0 right-0 z-100 bg-linear-to-r from-[#232526] to-[#252628] shadow-[0_18px_40px_rgba(0,0,0,0.24)] border-b-white/8">
       <div className="max-w-9xl mx-auto px-6 py-3 flex items-center justify-between">
@@ -21,21 +28,33 @@ export default function Header(props: {
 
         {/* Navigation Links */}
         <nav className="flex items-center gap-8">
-          <a
-            href="#racegpt"
-            className="transition-colors duration-200 font-medium hidden sm:block"
+          <button
+            type="button"
+            className="transition-colors duration-200 font-medium hidden sm:block border-0 bg-transparent p-0"
             onClick={() => {
               props.setSideBar(!props.sideBar);
             }}
           >
             RaceGPT
-          </a>
-          <a
-            href="#data"
-            className="transition-colors duration-200 font-medium"
+          </button>
+          <button
+            type="button"
+            className={navLinkClass(props.activePage === "data")}
+            onClick={() => {
+              props.onNavigate("data");
+            }}
           >
             Data
-          </a>
+          </button>
+          <button
+            type="button"
+            className={navLinkClass(props.activePage === "replay")}
+            onClick={() => {
+              props.onNavigate("replay");
+            }}
+          >
+            Replay
+          </button>
           {/* Hamburger Menu */}
           <label className="swap swap-rotate group">
             {/* this hidden checkbox controls the state */}

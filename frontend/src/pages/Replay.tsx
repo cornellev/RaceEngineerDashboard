@@ -1,0 +1,525 @@
+import { useEffect, useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
+import InteractiveGrid from "../layouts/InteractiveGrid";
+import type { SocketData } from "../utils/Socket";
+
+const DEFAULT_LATITUDE = 42.44666485723302;
+const DEFAULT_LONGITUDE = -76.4608710371343;
+const PLAYBACK_SPEEDS = [0.5, 1, 2, 4];
+const BASE_PLAYBACK_INTERVAL_MS = 180;
+
+type ParsedCsvResult = {
+  rows: SocketData[];
+  warnings: string[];
+};
+
+type CsvRow = Record<string, string>;
+
+export default function Replay() {
+  const [replayData, setReplayData] = useState<SocketData[]>([]);
+  const [frameIndex, setFrameIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState(
+    "Upload a CSV telemetry export to replay it on the dashboard.",
+  );
+
+  const visibleData = useMemo(
+    () => replayData.slice(0, frameIndex + 1),
+    [frameIndex, replayData],
+  );
+
+  useEffect(() => {
+    if (!isPlaying || replayData.length <= 1) {
+      return;
+    }
+
+    if (frameIndex >= replayData.length - 1) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setFrameIndex((previous) => {
+        const nextFrame = Math.min(previous + 1, replayData.length - 1);
+
+        if (nextFrame >= replayData.length - 1) {
+          setIsPlaying(false);
+        }
+
+        return nextFrame;
+      });
+    }, Math.max(40, BASE_PLAYBACK_INTERVAL_MS / playbackSpeed));
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [frameIndex, isPlaying, playbackSpeed, replayData.length]);
+
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setIsPlaying(false);
+
+    if (file.name.toLowerCase().endsWith(".csv")) {
+      try {
+        const text = await file.text();
+        const parsed = parseReplayCsv(text);
+
+        if (parsed.rows.length === 0) {
+          setReplayData([]);
+          setFrameIndex(0);
+          setFileName(file.name);
+          setStatusMessage("No replayable rows were found in that CSV file.");
+          return;
+        }
+
+        setReplayData(parsed.rows);
+        setFrameIndex(0);
+        setFileName(file.name);
+        setStatusMessage(
+          parsed.warnings.length > 0
+            ? `Loaded ${parsed.rows.length} samples from ${file.name}. ${parsed.warnings[0]}`
+            : `Loaded ${parsed.rows.length} samples from ${file.name}.`,
+        );
+        return;
+      } catch (error) {
+        console.error("Failed to parse replay CSV:", error);
+        setReplayData([]);
+        setFrameIndex(0);
+        setFileName(file.name);
+        setStatusMessage(
+          "That CSV could not be parsed. Check the column names and file format.",
+        );
+        return;
+      }
+    }
+
+    setReplayData([]);
+    setFrameIndex(0);
+    setFileName(file.name);
+    setStatusMessage(
+      "ROS bag upload is visible here for now, but only CSV replay is implemented today.",
+    );
+  };
+
+  const hasReplay = replayData.length > 0;
+
+  return (
+    <section className="h-[min(92.5vh,calc(100vh-67px))] w-full overflow-y-scroll [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex min-h-full flex-col gap-4 px-3 pt-3 pb-4 sm:px-4 lg:px-5">
+        <section className="rounded-[1.25rem] border border-white/8 bg-[linear-gradient(180deg,#242424,#252525)] p-4 text-white shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.26em] text-white/55">
+                Replay Session
+              </p>
+              <h1 className="mt-1 text-2xl font-semibold text-white">
+                Upload telemetry and replay it on the dashboard
+              </h1>
+              <p className="mt-2 text-sm text-white/65">{statusMessage}</p>
+              {fileName ? (
+                <p className="mt-2 text-xs uppercase tracking-[0.22em] text-white/45">
+                  File: {fileName}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <label className="flex cursor-pointer items-center justify-center rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:border-[var(--primary-accent)] hover:bg-white/10">
+                Upload CSV / ROSBag
+                <input
+                  type="file"
+                  accept=".csv,.bag,.db3,.mcap,text/csv"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+              </label>
+
+              <button
+                type="button"
+                className="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => {
+                  if (!hasReplay) {
+                    return;
+                  }
+
+                  if (!isPlaying && frameIndex >= replayData.length - 1) {
+                    setFrameIndex(0);
+                  }
+
+                  setIsPlaying((previous) => !previous);
+                }}
+                disabled={!hasReplay}
+              >
+                {isPlaying ? "Pause" : "Play"}
+              </button>
+
+              <button
+                type="button"
+                className="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => {
+                  setIsPlaying(false);
+                  setFrameIndex(0);
+                }}
+                disabled={!hasReplay}
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center">
+            <div>
+              <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-white/45">
+                <span>Frame</span>
+                <span>
+                  {hasReplay ? frameIndex + 1 : 0} / {replayData.length}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={Math.max(replayData.length - 1, 0)}
+                value={Math.min(frameIndex, Math.max(replayData.length - 1, 0))}
+                onChange={(event) => {
+                  setIsPlaying(false);
+                  setFrameIndex(Number(event.target.value));
+                }}
+                disabled={!hasReplay}
+                className="range range-sm w-full"
+              />
+            </div>
+
+            <label className="flex items-center gap-3 text-sm text-white/75">
+              <span className="uppercase tracking-[0.18em] text-white/45">
+                Speed
+              </span>
+              <select
+                value={playbackSpeed}
+                onChange={(event) => {
+                  setPlaybackSpeed(Number(event.target.value));
+                }}
+                className="rounded-full border border-white/10 bg-[#1f1f1f] px-3 py-2 text-sm text-white outline-none"
+              >
+                {PLAYBACK_SPEEDS.map((speed) => (
+                  <option key={speed} value={speed}>
+                    {speed}x
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="text-sm text-white/55">
+              {hasReplay
+                ? `Showing sample ${frameIndex + 1} as the current dashboard state.`
+                : "CSV columns can be flat or dotted, like speed, gps.lat, power.voltage, and motor.duty_cycle."}
+            </div>
+          </div>
+        </section>
+
+        <div className="flex-1">
+          <InteractiveGrid data={visibleData} mode="replay" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function parseReplayCsv(source: string): ParsedCsvResult {
+  const rows = parseCsv(source);
+
+  if (rows.length === 0) {
+    return { rows: [], warnings: [] };
+  }
+
+  const normalizedRows = rows
+    .map((row, index) => mapCsvRowToSocketData(row, index))
+    .filter((row) => Number.isFinite(row.global_ts))
+    .sort((left, right) => left.global_ts - right.global_ts)
+    .map((row, index) => ({ ...row, seq: index + 1 }));
+
+  const warnings: string[] = [];
+
+  if (normalizedRows.some((row) => row.gps.lat === DEFAULT_LATITUDE)) {
+    warnings.push("Some GPS fields were missing, so default coordinates were used.");
+  }
+
+  return {
+    rows: normalizedRows,
+    warnings,
+  };
+}
+
+function parseCsv(source: string): CsvRow[] {
+  const rows: string[][] = [];
+  let currentCell = "";
+  let currentRow: string[] = [];
+  let inQuotes = false;
+
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    const nextCharacter = source[index + 1];
+
+    if (character === '"') {
+      if (inQuotes && nextCharacter === '"') {
+        currentCell += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+
+      continue;
+    }
+
+    if (character === "," && !inQuotes) {
+      currentRow.push(currentCell);
+      currentCell = "";
+      continue;
+    }
+
+    if ((character === "\n" || character === "\r") && !inQuotes) {
+      if (character === "\r" && nextCharacter === "\n") {
+        index += 1;
+      }
+
+      currentRow.push(currentCell);
+      rows.push(currentRow);
+      currentRow = [];
+      currentCell = "";
+      continue;
+    }
+
+    currentCell += character;
+  }
+
+  if (currentCell.length > 0 || currentRow.length > 0) {
+    currentRow.push(currentCell);
+    rows.push(currentRow);
+  }
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const [headerRow, ...valueRows] = rows;
+  const headers = headerRow.map((header) => header.trim());
+
+  return valueRows
+    .filter((row) => row.some((value) => value.trim().length > 0))
+    .map((row) =>
+      headers.reduce<CsvRow>((record, header, index) => {
+        record[header] = row[index]?.trim() ?? "";
+        return record;
+      }, {}),
+    );
+}
+
+function mapCsvRowToSocketData(row: CsvRow, index: number): SocketData {
+  const normalizedRow = Object.entries(row).reduce<Record<string, string>>(
+    (record, [key, value]) => {
+      record[normalizeHeader(key)] = value;
+      return record;
+    },
+    {},
+  );
+
+  const globalTs = getTimestamp(normalizedRow, index);
+
+  const gpsSpeed = getNumber(normalizedRow, [
+    "gpsspeed",
+    "speedmps",
+    "speed",
+    "velocity",
+  ]);
+
+  return {
+    seq: getNumber(normalizedRow, ["seq", "index", "row"], index + 1),
+    global_ts: globalTs,
+    power: {
+      ts: getTimestamp(normalizedRow, index, ["powerts"], globalTs),
+      current: getNumber(normalizedRow, [
+        "powercurrent",
+        "current",
+        "batterycurrent",
+        "packcurrent",
+      ]),
+      voltage: getNumber(normalizedRow, [
+        "powervoltage",
+        "voltage",
+        "batteryvoltage",
+        "packvoltage",
+      ]),
+    },
+    steering: {
+      ts: getTimestamp(normalizedRow, index, ["steeringts"], globalTs),
+      brake_pressure: getNumber(normalizedRow, [
+        "steeringbrakepressure",
+        "brakepressure",
+        "brake",
+      ]),
+      turn_angle: getNumber(normalizedRow, [
+        "steeringturnangle",
+        "turnangle",
+        "steeringangle",
+        "angle",
+      ]),
+    },
+    rpm_front: {
+      ts: getTimestamp(normalizedRow, index, ["rpmfrontts"], globalTs),
+      rpm_left: getNumber(normalizedRow, [
+        "rpmfrontrpmleft",
+        "rpmfrontleft",
+        "frontleftrpm",
+      ]),
+      rpm_right: getNumber(normalizedRow, [
+        "rpmfrontrpmright",
+        "rpmfrontright",
+        "frontrightrpm",
+      ]),
+    },
+    rpm_back: {
+      ts: getTimestamp(normalizedRow, index, ["rpmbackts"], globalTs),
+      rpm_left: getNumber(normalizedRow, [
+        "rpmbackrpmleft",
+        "rpmbackleft",
+        "rearleftrpm",
+        "backleftrpm",
+      ]),
+      rpm_right: getNumber(normalizedRow, [
+        "rpmbackrpmright",
+        "rpmbackright",
+        "rearrightrpm",
+        "backrightrpm",
+      ]),
+    },
+    gps: {
+      ts: getTimestamp(normalizedRow, index, ["gpsts", "locationts"], globalTs),
+      lat: getNumber(normalizedRow, ["gpslat", "lat", "latitude"], DEFAULT_LATITUDE),
+      long: getNumber(normalizedRow, ["gpslong", "long", "lng", "lon", "longitude"], DEFAULT_LONGITUDE),
+      heading: getNumber(normalizedRow, ["gpsheading", "heading"]),
+      speed: gpsSpeed,
+    },
+    motor: {
+      ts: getTimestamp(normalizedRow, index, ["motorts"], globalTs),
+      rpm: getNumber(normalizedRow, ["motorrpm", "rpm"]),
+      duty_cycle: getNumber(normalizedRow, [
+        "motordutycycle",
+        "dutycycle",
+        "duty",
+      ]),
+    },
+    filtered: {
+      speed: getNumber(normalizedRow, ["filteredspeed", "speedfiltered"], gpsSpeed),
+    },
+    latency_ms: getNullableNumber(normalizedRow, ["latencyms", "latency"]),
+  };
+}
+
+function normalizeHeader(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function getNumber(
+  row: Record<string, string>,
+  aliases: string[],
+  fallback = 0,
+): number {
+  for (const alias of aliases) {
+    const value = row[alias];
+
+    if (value == null || value.length === 0) {
+      continue;
+    }
+
+    const parsed = Number(value);
+
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
+
+function getNullableNumber(
+  row: Record<string, string>,
+  aliases: string[],
+): number | null {
+  for (const alias of aliases) {
+    const value = row[alias];
+
+    if (value == null || value.length === 0) {
+      continue;
+    }
+
+    const parsed = Number(value);
+
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function getTimestamp(
+  row: Record<string, string>,
+  index: number,
+  aliases = [
+    "globalts",
+    "timestamp",
+    "ts",
+    "time",
+    "stamp",
+    "stampns",
+    "stampus",
+    "timems",
+    "timeus",
+  ],
+  fallback?: number,
+): number {
+  for (const alias of aliases) {
+    const value = row[alias];
+
+    if (value == null || value.length === 0) {
+      continue;
+    }
+
+    const parsed = Number(value);
+
+    if (!Number.isFinite(parsed)) {
+      continue;
+    }
+
+    return normalizeTimestampMicros(parsed);
+  }
+
+  return fallback ?? (index + 1) * 100000;
+}
+
+function normalizeTimestampMicros(value: number): number {
+  const absoluteValue = Math.abs(value);
+
+  if (absoluteValue >= 1e17) {
+    return Math.round(value / 1000);
+  }
+
+  if (absoluteValue >= 1e14) {
+    return Math.round(value);
+  }
+
+  if (absoluteValue >= 1e11) {
+    return Math.round(value * 1000);
+  }
+
+  if (absoluteValue >= 1e9) {
+    return Math.round(value * 1000000);
+  }
+
+  return Math.round(value * 1000000);
+}

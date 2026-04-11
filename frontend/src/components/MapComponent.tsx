@@ -11,7 +11,9 @@ const locationOptions = ["B-Lot", "Indianapolis Motor Speedway"] as const;
 type TrackLocation = (typeof locationOptions)[number];
 
 function isValidCoordinate(value: number | null, min: number, max: number) {
-  return value !== null && Number.isFinite(value) && value >= min && value <= max;
+  return (
+    value !== null && Number.isFinite(value) && value >= min && value <= max
+  );
 }
 
 function isValidLatLng(latitude: number | null, longitude: number | null) {
@@ -202,7 +204,7 @@ const MapComponent = ({
                 className={`
                   absolute h-6 w-6 rounded-full
                   bg-blue-400 blur-md transition-all duration-300
-                  ${isPulsing ? "opacity-90 scale-125" : "opacity-40 scale-100"}
+                  ${isPulsing ? "opacity-90 scale-105" : "opacity-40 scale-100"}
                 `}
               />
               {/* core dot */}
@@ -211,12 +213,12 @@ const MapComponent = ({
                   ${zoom >= 16 ? "h-3 w-3" : "h-2 w-2"} rounded-full
                   bg-blue-500 border-2 border-white
                   transition-transform duration-300
-                  ${isPulsing ? "scale-125" : "scale-100"}
+                  ${isPulsing ? "scale-105" : "scale-100"}
                 `}
               />
               {/* ripple effect */}
               {isPulsing && (
-                <div className="absolute h-8 w-8 top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] rounded-full bg-blue-400 opacity-50 animate-ping" />
+                <div className="absolute h-7 w-7 top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] rounded-full bg-blue-400 opacity-50 animate-ping" />
               )}
             </div>
           </AdvancedMarker>
