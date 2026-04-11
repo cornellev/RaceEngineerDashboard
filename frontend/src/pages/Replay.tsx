@@ -6,7 +6,7 @@ import type { SocketData } from "../utils/Socket";
 const DEFAULT_LATITUDE = 42.44666485723302;
 const DEFAULT_LONGITUDE = -76.4608710371343;
 const PLAYBACK_SPEEDS = [0.5, 1, 2, 4, 10, 20, 50, 100];
-const BASE_PLAYBACK_INTERVAL_MS = 180;
+const BASE_PLAYBACK_INTERVAL_MS = 100;
 const MPH_PER_MPS = 2.23694;
 
 type ParsedCsvResult = {
@@ -52,7 +52,7 @@ export default function Replay() {
           return nextFrame;
         });
       },
-      Math.max(40, BASE_PLAYBACK_INTERVAL_MS / playbackSpeed),
+      Math.max(1, BASE_PLAYBACK_INTERVAL_MS / playbackSpeed),
     );
 
     return () => {
