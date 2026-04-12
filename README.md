@@ -122,6 +122,7 @@ Use it to inspect telemetry exports without needing a live ROS2 stream.
 ### Current capabilities
 
 - Upload a `.csv` telemetry file from the Replay page
+- Upload a rosbag2 SQLite `.db3` file from the Replay page
 - Play, pause, reset, and scrub through the uploaded run
 - Change playback speed from `0.5x` up to `100x`
 - Render replayed samples through the same dashboard layout used for live telemetry
@@ -147,11 +148,13 @@ If a speed column name includes `mph`, the replay parser converts it to meters p
 second before rendering. If GPS coordinates are missing, the dashboard falls back
 to default coordinates and shows a warning after upload.
 
-### ROSBag status
+### ROSBag expectations
 
-The Replay page file picker currently accepts ROS bag-related extensions such as
-`.bag`, `.db3`, and `.mcap`, but **only CSV replay is implemented today**. Uploading
-one of those files will not start a bag replay yet.
+ROS bag replay currently supports rosbag2 SQLite `.db3` files and converts them
+through the backend into flattened CSV-style telemetry rows before rendering.
+Replayable messages should contain JSON payloads, like the example bag files
+under `frontend/data`. Messages that cannot be converted into telemetry rows are
+skipped during import.
 
 <video src="frontend/public/ReplayRED.mp4" loop muted autoplay></video>
 
@@ -165,6 +168,7 @@ ROS2 Sensors → Backend (Python + ROS2) → WebSocket Stream → Frontend (Reac
                                   RaceGPT Integration
 
 Uploaded CSV → Frontend Replay Parser → Replay Timeline → Shared Dashboard Widgets
+Uploaded ROS bag `.db3` → Backend Bag Parser → Replay Timeline → Shared Dashboard Widgets
 ```
 
 ---
@@ -186,4 +190,4 @@ RaceGPT is integrated as an **on-demand analysis layer**.
 - The frontend can trigger ROSbag recording via `/bag` endpoints
 - The backend communicates with the DAQ machine through **Tailscale**
 - ROSbag files are stored remotely for later analysis and replay
-- Local dashboard replay currently supports uploaded CSV telemetry exports
+- Local dashboard replay supports uploaded CSV telemetry exports and rosbag2 SQLite `.db3` files

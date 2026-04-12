@@ -4,7 +4,9 @@ import contextlib
 import collections
 import time
 import os
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body, HTTPException, Response
+import tempfile
+from pathlib import Path
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body, HTTPException, Response, Header
 from fastapi.middleware.cors import CORSMiddleware
 import rclpy
 from rclpy.executors import SingleThreadedExecutor
@@ -13,6 +15,8 @@ from contextlib import asynccontextmanager
 import math
 import racegpt as racegpt_module
 import httpx
+
+from rosbag_replay import parse_rosbag_to_csv_rows
 
 DEQUE_SIZE = 1000 # for snapshot
 SAMPLE_RATE_HZ = 40  # rate at which we send data to frontend
@@ -238,6 +242,42 @@ async def healthz():
     except Exception:
         bag_status = "unreachable"
     return {"local": "ok", "bag_service": bag_status}
+
+@app.post("/replay/rosbag")
+async def replay_rosbag(
+    payload: bytes = Body(..., media_type="application/octet-stream"),
+    x_file_name: str | None = Header(default=None),
+):
+    lower_name = (x_file_name or "").lower()
+
+    if not lower_name.endswith(".db3"):
+        raise HTTPException(
+            status_code=400,
+            detail="Replay currently supports ROS bag SQLite files with a .db3 extension.",
+        )
+
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".db3") as temp_file:
+            temp_file.write(payload)
+            temp_path = temp_file.name
+
+        rows, warnings = parse_rosbag_to_csv_rows(Path(temp_path))
+
+        return {
+            "rows": sanitize_json(rows),
+            "warnings": warnings,
+            "message_count": len(rows),
+        }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="That .db3 file could not be parsed with the rosbag replay converter.",
+        ) from exc
+    finally:
+        if temp_path is not None:
+            with contextlib.suppress(OSError):
+                os.remove(temp_path)
 
 @app.websocket("/ws/stream")
 async def websocket_stream(websocket: WebSocket):

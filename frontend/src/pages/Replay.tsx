@@ -9,12 +9,17 @@ const PLAYBACK_SPEEDS = [0.5, 1, 2, 4, 10, 20, 50, 100];
 const BASE_PLAYBACK_INTERVAL_MS = 100;
 const MPH_PER_MPS = 2.23694;
 
-type ParsedCsvResult = {
+type ParsedReplayResult = {
   rows: SocketData[];
   warnings: string[];
 };
 
 type CsvRow = Record<string, string>;
+
+type RosbagReplayResponse = {
+  rows?: Record<string, unknown>[];
+  warnings?: string[];
+};
 
 export default function Replay() {
   const [replayData, setReplayData] = useState<SocketData[]>([]);
@@ -23,7 +28,7 @@ export default function Replay() {
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [fileName, setFileName] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState(
-    "Upload a CSV telemetry export to replay it on the dashboard.",
+    "Upload a CSV telemetry export or rosbag2 SQLite `.db3` file to replay it on the dashboard.",
   );
 
   const visibleData = useMemo(
@@ -113,11 +118,44 @@ export default function Replay() {
       }
     }
 
+    if (file.name.toLowerCase().endsWith(".db3")) {
+      try {
+        const parsed = await parseReplayRosbag(file);
+
+        if (parsed.rows.length === 0) {
+          setReplayData([]);
+          setFrameIndex(0);
+          setFileName(file.name);
+          setStatusMessage("No replayable telemetry messages were found in that ROS bag.");
+          return;
+        }
+
+        setReplayData(parsed.rows);
+        setFrameIndex(0);
+        setFileName(file.name);
+        setStatusMessage(
+          parsed.warnings.length > 0
+            ? `Loaded ${parsed.rows.length} samples from ${file.name}. ${parsed.warnings[0]}`
+            : `Loaded ${parsed.rows.length} samples from ${file.name}.`,
+        );
+        return;
+      } catch (error) {
+        console.error("Failed to parse replay ROS bag:", error);
+        setReplayData([]);
+        setFrameIndex(0);
+        setFileName(file.name);
+        setStatusMessage(
+          "That ROS bag could not be parsed. Upload a rosbag2 SQLite `.db3` file with JSON telemetry messages.",
+        );
+        return;
+      }
+    }
+
     setReplayData([]);
     setFrameIndex(0);
     setFileName(file.name);
     setStatusMessage(
-      "ROS bag upload is visible here for now, but only CSV replay is implemented today.",
+      "Replay currently supports CSV files and rosbag2 SQLite `.db3` files.",
     );
   };
 
@@ -148,7 +186,7 @@ export default function Replay() {
                 Upload CSV / ROSBag
                 <input
                   type="file"
-                  accept=".csv,.bag,.db3,.mcap,text/csv"
+                  accept=".csv,.db3,text/csv"
                   className="hidden"
                   onChange={handleFileUpload}
                 />
@@ -231,7 +269,7 @@ export default function Replay() {
             <div className="text-sm text-white/55">
               {hasReplay
                 ? `Showing sample ${frameIndex + 1} as the current dashboard state.`
-                : "CSV columns can be flat or dotted, like speed, gps.lat, power.voltage, and motor.duty_cycle."}
+                : "CSV columns can be flat or dotted, and rosbag2 `.db3` uploads can replay JSON telemetry from `std_msgs/String` topics."}
             </div>
           </div>
         </section>
@@ -241,7 +279,7 @@ export default function Replay() {
   );
 }
 
-function parseReplayCsv(source: string): ParsedCsvResult {
+function parseReplayCsv(source: string): ParsedReplayResult {
   const rows = parseCsv(source);
 
   if (rows.length === 0) {
@@ -264,6 +302,46 @@ function parseReplayCsv(source: string): ParsedCsvResult {
 
   return {
     rows: normalizedRows,
+    warnings,
+  };
+}
+
+async function parseReplayRosbag(file: File): Promise<ParsedReplayResult> {
+  const fileBytes = await file.arrayBuffer();
+
+  const response = await fetch("http://localhost:8000/replay/rosbag", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/octet-stream",
+      "X-File-Name": file.name,
+    },
+    body: fileBytes,
+  });
+
+  const payload = (await response.json()) as RosbagReplayResponse & {
+    detail?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(payload.detail ?? "ROS bag replay request failed.");
+  }
+
+  const rows = (payload.rows ?? [])
+    .map((row, index) => mapRosbagRowToSocketData(row, index))
+    .filter((row) => Number.isFinite(row.global_ts))
+    .sort((left, right) => left.global_ts - right.global_ts)
+    .map((row, index) => ({ ...row, seq: index + 1 }));
+
+  const warnings = [...(payload.warnings ?? [])];
+
+  if (rows.some((row) => row.gps.lat === DEFAULT_LATITUDE)) {
+    warnings.push(
+      "Some GPS fields were missing, so default coordinates were used.",
+    );
+  }
+
+  return {
+    rows,
     warnings,
   };
 }
@@ -445,6 +523,18 @@ function mapCsvRowToSocketData(row: CsvRow, index: number): SocketData {
     },
     latency_ms: getNullableNumber(normalizedRow, ["latencyms", "latency"]),
   };
+}
+
+function mapRosbagRowToSocketData(
+  row: Record<string, unknown>,
+  index: number,
+): SocketData {
+  const csvLikeRow = Object.entries(row).reduce<CsvRow>((record, [key, value]) => {
+    record[key] = value == null ? "" : String(value);
+    return record;
+  }, {});
+
+  return mapCsvRowToSocketData(csvLikeRow, index);
 }
 
 function normalizeHeader(value: string): string {

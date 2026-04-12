@@ -82,7 +82,7 @@ const toTimestampMs = (value: unknown): number | null => {
   return numericValue;
 };
 
-const normalizeData = (
+export const normalizeSocketData = (
   payload: unknown,
   envelope?: LooseRecord,
   recvMs?: number,
@@ -160,7 +160,7 @@ const normalizeData = (
     motor: {
       ts: toTimestampMs(motor.ts) ?? globalTimestamp,
       rpm: toNumber(motor.rpm),
-      duty_cycle: toNumber(motor.duty_cycle),
+      duty_cycle: toNumber(motor.duty_cycle ?? motor.throttle),
     },
     filtered: {
       speed: toNumber(filtered.speed ?? speedValue),
@@ -171,7 +171,7 @@ const normalizeData = (
 
 import dummyData from "./data" with { type: "json" };
 dummyData.map((data) => {
-  normalizeData(data);
+  normalizeSocketData(data);
 });
 
 class SocketService {
@@ -205,7 +205,7 @@ class SocketService {
     this.socket.onmessage = (event: MessageEvent) => {
       const recvMs = Date.now();
       const envelope = JSON.parse(event.data);
-      const data = normalizeData(
+      const data = normalizeSocketData(
         envelope.data ?? envelope,
         asRecord(envelope),
         recvMs,

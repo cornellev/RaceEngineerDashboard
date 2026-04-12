@@ -4,3 +4,4 @@ websockets
 asyncio
 pyserial
 httpx
+rosbags
