@@ -1,4 +1,4 @@
 frontend/data/*
 frontend/node_modules/*
-
+backend/__pycache__/*
 .codex

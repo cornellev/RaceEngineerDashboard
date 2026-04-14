@@ -53,7 +53,7 @@ export default function Header(props: {
               props.onNavigate("data");
             }}
           >
-            Data
+            Live
           </a>
           {/* Hamburger Menu */}
           <label className="swap swap-rotate group">
