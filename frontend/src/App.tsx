@@ -11,7 +11,7 @@ import { useState, useEffect } from "react";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
-type AppPage = "data" | "replay";
+type AppPage = "live" | "replay";
 
 const darkTheme = createTheme({
   palette: {
@@ -38,7 +38,7 @@ const darkTheme = createTheme({
 
 function App() {
   const [sideBar, setSideBar] = useState(false);
-  const [activePage, setActivePage] = useState<AppPage>("data");
+  const [activePage, setActivePage] = useState<AppPage>("live");
   const [data, setData] = useState<SocketData[]>(() => socket.getData());
 
   useEffect(() => {
@@ -65,7 +65,7 @@ function App() {
       <main
         className={`${sideBar ? "xl:w-[80%]" : "w-screen"} h-fit transition-all duration-300 ease-in-out m-0 p-0`}
       >
-        {activePage === "data" ? <Data data={data} /> : <Replay />}
+        {activePage === "live" ? <Data data={data} /> : <Replay />}
       </main>
     </ThemeProvider>
   );

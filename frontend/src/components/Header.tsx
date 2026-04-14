@@ -3,8 +3,8 @@ import logo from "/logo.svg";
 export default function Header(props: {
   setSideBar: (open: boolean) => void;
   sideBar: boolean;
-  activePage: "data" | "replay";
-  onNavigate: (page: "data" | "replay") => void;
+  activePage: "live" | "replay";
+  onNavigate: (page: "live" | "replay") => void;
 }) {
   const navLinkClass = (isActive: boolean) =>
     `border-0 bg-transparent p-0 font-medium transition-colors duration-200 ${
@@ -48,9 +48,9 @@ export default function Header(props: {
           </a>
           <a
             type="button"
-            className={navLinkClass(props.activePage === "data")}
+            className={navLinkClass(props.activePage === "live")}
             onClick={() => {
-              props.onNavigate("data");
+              props.onNavigate("live");
             }}
           >
             Live
