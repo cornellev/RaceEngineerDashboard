@@ -45,12 +45,12 @@ const MapComponent = ({
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapId = import.meta.env.VITE_GOOGLE_MAP_ID || "DEMO_MAP_ID";
 
-  const [heading, setHeading] = useState(90);
+  const [heading, setHeading] = useState(180);
   const [isDragging, setIsDragging] = useState(false);
   const lastX = useRef<number | null>(null);
   const [isPulsing, setIsPulsing] = useState(false);
 
-  const [zoom, setZoom] = useState(15);
+  const [zoom, setZoom] = useState(16);
   const minZoom = 14;
   const maxZoom = 20;
   const showImsMarkers = selectedLocation === "Indianapolis Motor Speedway";
@@ -149,7 +149,7 @@ const MapComponent = ({
       >
         <Map
           center={mapCenter}
-          defaultZoom={12}
+          defaultZoom={16}
           zoom={zoom}
           gestureHandling="none"
           disableDefaultUI
@@ -157,7 +157,7 @@ const MapComponent = ({
           streetViewControl={false}
           mapTypeControl={false}
           fullscreenControl={false}
-          defaultHeading={135}
+          defaultHeading={180}
           heading={heading}
           tilt={25}
           mapId={mapId}
